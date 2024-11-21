@@ -12,6 +12,9 @@ struct TensorView
   int            width  = 0;
   int            height = 0;
   std::ptrdiff_t stride = 0;
+
+    T* operator[](int y);
+    const T* operator[](int y) const;
 };
 
 // Class that owns data
@@ -44,7 +47,7 @@ Tensor<T>::Tensor(const char* path)
   this->width  = w;
   this->height = h;
   this->stride = w * sizeof(T);
-  this->deleter = stbi_Tensor_free;
+  this->deleter = stbi_image_free;
 }
 
 template <class T>
@@ -87,11 +90,28 @@ Tensor<T>& Tensor<T>::operator=(Tensor&& other) noexcept
 }
 
 template <class T>
-T* Tensor<T>::operator[](int y) noexcept
+T* Tensor<T>::operator[](int y)
 {
+  if (y < 0 || y >= height) {
+    throw std::out_of_range("Row index out of range: " + std::to_string(y));
+  }
   T* casted_buffer = (T *)((std::byte *)this->buffer + y * this->pitch);
   return casted_buffer;
 }
+
+template <class T>
+const T* Tensor<T>::operator[](int y) const
+{
+  if (y < 0 || y >= height) {
+    throw std::out_of_range("Row index out of range: " + std::to_string(y));
+  }
+  T* casted_buffer = (T *)((std::byte *)this->buffer + y * this->pitch);
+  return casted_buffer;
+}
+
+// TODO a switchDevice function:
+
+
 
 /*
 template <class T>
