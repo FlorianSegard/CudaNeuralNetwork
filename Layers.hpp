@@ -32,11 +32,11 @@ struct LayerParams {
 };
 
 struct Layer {
-    bool device = false;
     LayerParams* params = nullptr;
+    bool device = false;
 
-    Layer(bool device = false, LayerParams* params = nullptr)
-        : device(device), params(std::move(params)) {}
+    Layer(LayerParams* params = nullptr, bool device = false)
+        : params(std::move(params)), device(device) {}
     
     virtual ~Layer() = default;
 
@@ -84,9 +84,10 @@ struct ReLu : public Layer {
 // Example for Linear layer:
 struct Linear : public Layer {
     LayerParams params;
+    bool require_grad = true;
 
-    Linear(int inputSize, int outputSize, bool device = false)
-        : Layer(device), params(inputSize, outputSize, device) {}
+    Linear(int inputSize, int outputSize, bool device = false, bool require_grad = true)
+        : Layer(device), params(inputSize, outputSize, device), require_grad(require_grad) {}
 
     void forward(float* input, float* output) override { // probably should put Tensor to get input size to check if the size is correct
         if (device) {
