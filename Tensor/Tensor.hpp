@@ -8,13 +8,11 @@
 template <class T>
 struct Tensor;
 
-#ifdef __CUDACC__
 template <class T>
 __global__ void transposeKernel(const T* input, T* output, int width, int height, size_t inStride, size_t outStride);
 
 template <class T>
 Tensor<T> transposeGPU(const Tensor<T>& input);
-#endif
 
 template <class T>
 Tensor<T> transposeCPU(const Tensor<T>& input);
@@ -92,26 +90,24 @@ Tensor<T>& Tensor<T>::operator=(Tensor&& other) noexcept {
 
 template <class T>
 __host__ __device__ T* Tensor<T>::operator[](int y) {
-#ifdef __CUDA_ARCH__
-    return (T*)((std::byte*)this->buffer + y * this->stride);
-#else
+    if (this->device)
+        return (T*)((std::byte*)this->buffer + y * this->stride);
+
     if (y < 0 || y >= this->height) {
         throw std::out_of_range("Row index out of range: " + std::to_string(y));
     }
     return (T*)((std::byte*)this->buffer + y * this->stride);
-#endif
 }
 
 template <class T>
 __host__ __device__ const T* Tensor<T>::operator[](int y) const {
-#ifdef __CUDA_ARCH__
-    return (T*)((std::byte*)this->buffer + y * this->stride);
-#else
+    if (this->device)
+        return (T*)((std::byte*)this->buffer + y * this->stride);
+
     if (y < 0 || y >= this->height) {
         throw std::out_of_range("Row index out of range: " + std::to_string(y));
     }
     return (T*)((std::byte*)this->buffer + y * this->stride);
-#endif
 }
 
 template <class T>
@@ -150,13 +146,8 @@ Tensor<T> Tensor<T>::switchDevice(bool gpu) {
 
 template <class T>
 Tensor<T> Tensor<T>::transpose() const {
-    if (this->device) {
-#ifdef __CUDACC__
+    if (this->device)
         return transposeGPU(*this);
-#else
-        throw std::runtime_error("CUDA code is not available in this build.");
-#endif
-    } else {
+    else
         return transposeCPU(*this);
-    }
 }

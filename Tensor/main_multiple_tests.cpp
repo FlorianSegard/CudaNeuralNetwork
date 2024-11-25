@@ -75,34 +75,31 @@ void testTensorTransposeCPU() {
     std::cout << "Tensor Transpose CPU Test Passed!\n";
 }
 
-#ifdef __CUDACC__
 void testTensorTransposeGPU() {
-    Tensor<int> tensor(3, 2, true);
+    Tensor<int> tensor(3, 2, false);
     fillTensor(tensor);
 
     Tensor<int> transposed = tensor.transpose();
 
-    Tensor<int> cpuTensor = transposed.switchDevice(false);
-    Tensor<int> originalCpuTensor = tensor.switchDevice(false);
+    Tensor<int> gpuTensor = transposed.switchDevice(true);
 
-    for (int y = 0; y < cpuTensor.height; ++y) {
-        for (int x = 0; x < cpuTensor.width; ++x) {
-            assert(cpuTensor[y][x] == originalCpuTensor[x][y]);
+    Tensor<int> gpuTensortransposed = gpuTensor.transpose();
+    Tensor<int> originalCpuTensor = gpuTensortransposed.switchDevice(false);
+
+    for (int y = 0; y < tensor.height; ++y) {
+        for (int x = 0; x < tensor.width; ++x) {
+            assert(tensor[y][x] == originalCpuTensor[y][x]);
         }
     }
     std::cout << "Tensor Transpose GPU Test Passed!\n";
 }
-#endif
 
 int main() {
     testTensorCreation();
     testTensorClone();
     testTensorSwitchDevice();
     testTensorTransposeCPU();
-
-#ifdef __CUDACC__
     testTensorTransposeGPU();
-#endif
 
     std::cout << "All tests passed!\n";
     return 0;

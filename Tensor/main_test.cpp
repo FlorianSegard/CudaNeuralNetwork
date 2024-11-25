@@ -1,6 +1,5 @@
 #include "Tensor.hpp"
 #include <iostream>
-#include <cuda_runtime.h>
 
 int main() {
     try {

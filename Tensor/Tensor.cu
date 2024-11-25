@@ -8,7 +8,7 @@ __global__ void transposeKernel(const T* input, T* output, int width, int height
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        output[x * outStride / sizeof(T) + y] = input[y * inStride / sizeof(T) + x];
+        output[x * (outStride / sizeof(T)) + y] = input[y * (inStride / sizeof(T)) + x];
     }
 }
 
