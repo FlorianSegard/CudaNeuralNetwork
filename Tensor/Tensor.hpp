@@ -8,6 +8,8 @@
 template <class T>
 struct Tensor;
 
+// -------------------------------------------- TRANSPOSE -------------------------------------------- \\
+
 template <class T>
 __global__ void transposeKernel(const T* input, T* output, int width, int height, size_t inStride, size_t outStride);
 
@@ -16,6 +18,19 @@ Tensor<T> transposeGPU(const Tensor<T>& input);
 
 template <class T>
 Tensor<T> transposeCPU(const Tensor<T>& input);
+
+// -------------------------------------------- FILL UP WITH ZEROS -------------------------------------------- \\
+
+template <class T>
+__global__ void fillZeroKernel(T* input, int width, int height, size_t inStride);
+
+template <class T>
+void fillZeroGPU(Tensor<T>& input);
+
+template <class T>
+void fillZeroCPU(Tensor<T>& input);
+
+// -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
 // View over a 2D buffer
 template <class T>
@@ -48,6 +63,7 @@ struct Tensor : TensorView<T> {
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
+    void fillZero();
 };
 
 template <class T>
@@ -151,3 +167,13 @@ Tensor<T> Tensor<T>::transpose() const {
     else
         return transposeCPU(*this);
 }
+
+template <class T>
+void Tensor<T>::fillZero() {
+    if (this->device)
+        fillZeroGPU(*this);
+    else
+        fillZeroCPU(*this);
+}
+
+//TODO implement random filling test later maybe: glorot filling
