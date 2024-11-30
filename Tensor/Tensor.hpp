@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <memory>
+#include <iostream>
 
 template <class T>
 struct Tensor;
@@ -29,6 +30,17 @@ void fillZeroGPU(Tensor<T>& input);
 
 template <class T>
 void fillZeroCPU(Tensor<T>& input);
+
+// -------------------------------------------- DOT -------------------------------------------- \\
+
+template <class T>
+__global__ void dotGPUKernel(T* input, T* other, T* result, int width_input, int height_input, int width_output, size_t inputStride, size_t otherStride, size_t resultStride);
+
+template <class T>
+Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other);
+
+template <class T>
+Tensor<T> dotCPU(const Tensor<T>& input, const Tensor<T>& other);
 
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
@@ -64,6 +76,7 @@ struct Tensor : TensorView<T> {
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
     void fillZero();
+    Tensor dot(const Tensor& other);
 };
 
 template <class T>
@@ -175,5 +188,16 @@ void Tensor<T>::fillZero() {
     else
         fillZeroCPU(*this);
 }
+
+template <class T>
+Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
+    if (this->width != other.height)
+        throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+    if (this->device)
+        return dotGPU(*this, other);
+    else
+        return dotCPU(*this, other);
+}
+
 
 //TODO implement random filling test later maybe: glorot filling
