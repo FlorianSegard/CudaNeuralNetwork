@@ -35,15 +35,19 @@ struct Layer {
     LayerParams* params = nullptr;
     bool device = false;
     bool require_grad = true;
+    Tensor<float> lastInput;
 
     Layer(LayerParams* params = nullptr, bool device = false)
         : params(std::move(params)), device(device), require_grad(require_grad) {}
     
     virtual ~Layer() = default;
 
-    virtual void forward(float* input, float* output) = 0;
+    Tensor<float> forward(const Tensor<float>& input) {
+        lastInput = input;
+        return computeForward(input);
+    }
 
-    virtual void backward(float* dOutput, float* dInput) = 0;
+    virtual Tensor<float> backward(const Tensor<float>& dOutput) = 0;
 
     void setDevice(bool device) {
         this->device = device;
@@ -54,6 +58,9 @@ struct Layer {
     }
 
 protected:
+
+    virtual Tensor<float> computeForward(const Tensor<float>& input) = 0;
+
     virtual void onDeviceChanged(bool device) {
         const char* layerType = typeid(*this).name(); // Get derived class name
         if (device) {
@@ -68,13 +75,13 @@ protected:
 struct ReLu : public Layer {
     ReLu(bool device) : Layer(device) {}
 
-    void forward(float* input, float* output) override { // probably should put Tensor to get input size to check if the size is correct
+    void computeForward(const Tensor<float>& input) override { // probably should put Tensor to get input size to check if the size is correct
         for (int i = 0; i < inputSize; ++i) {
             output[i] = fmaxf(0.0f, input[i]);
         }
     }
 
-    void backward(float* dOutput, float* dInput) override { // probably should put Tensor
+    void backward(const Tensor<float>& dOutput) override { // probably should put Tensor
         for (int i = 0; i < inputSize; ++i) {
             dInput[i] = dOutput[i] > 0 ? dOutput[i] : 0.0f;
         }
