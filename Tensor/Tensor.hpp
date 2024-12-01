@@ -244,5 +244,4 @@ Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
         return dotCPU(*this, other);
 }
 
-
 //TODO implement random filling test later maybe: glorot filling

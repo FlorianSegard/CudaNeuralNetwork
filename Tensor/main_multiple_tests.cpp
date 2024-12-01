@@ -264,6 +264,28 @@ void testTensorADD2() {
     std::cout << "Tensor Creation Test Passed!\n";
 }
 
+// void testApply() {
+//     Tensor<int> A(20, 20, false);
+
+//     std::cout << "Matrix A: " << A.height << " x " << A.width << std::endl;
+
+//     fillTensor(A);
+
+//     printTensor(A);
+
+//     apply(A, [] __host__ __device__(float x) { return x > 0 ? x : 0; }); // Apply ReLU
+
+
+//     Tensor<int> Agpu = A.switchDevice(true);
+
+//     Tensor<int> Agpucpu = Agpu.switchDevice(false);
+//     std::cout << "Matrix C: " << Agpu.height << " x " << Agpu.width << std::endl;
+
+//     printTensor(Agpu);
+
+//     std::cout << "Tensor Creation Test Passed!\n";
+// }
+
 
 
 
