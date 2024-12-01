@@ -19,11 +19,18 @@ struct Model
 
     Tensor<float> forward(Tensor<float> input) 
     {
-        for(int i=0; i < vector.size(); i++){
-            Tensor<float> output = vector[i].forward(input);
-            input = output;
+        for (auto& layer : layers) {
+            input = layer.forward(input);
         }
         return input;
+    }
+
+    void backward(Tensor<float> output)
+    {
+        Tensor<float> dInput = dOutput;
+        for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+            dInput = it->backward(dInput);
+        }
     }
 };
 
