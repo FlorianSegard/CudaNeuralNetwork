@@ -173,3 +173,45 @@ Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other) {
 template Tensor<float> dotGPU(const Tensor<float>& input, const Tensor<float>& other);
 template Tensor<double> dotGPU(const Tensor<double>& input, const Tensor<double>& other);
 template Tensor<int> dotGPU(const Tensor<int>& input, const Tensor<int>& other);
+
+
+// ----------------------------------------------------------- ADD ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void addKernel(const T* input, const T* other, T* result, int width, int height, int inputWidth, int inputHeight, int otherWidth, int otherHeight, size_t inputStride, size_t otherStride, size_t resultStride) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        int inputIndex = (x % inputWidth) + (inputStride / sizeof(T)) * (y % inputHeight);
+        int otherIndex = (x % otherWidth) + (otherStride / sizeof(T)) * (y % otherHeight);
+        int resultIndex = x + (resultStride / sizeof(T)) * y;
+
+        result[resultIndex] = input[inputIndex] + other[otherIndex];
+    }
+}
+
+template <class T>
+Tensor<T> addGPU(const Tensor<T>& input, const Tensor<T>& other) {
+    int resultWidth = std::max(input.width, other.width);
+    int resultHeight = std::max(input.height, other.height);
+
+    Tensor<T> result(resultWidth, resultHeight, true);
+
+    dim3 blockSize(16, 16);
+    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x, 
+                  (input.height + blockSize.y - 1) / blockSize.y);
+
+    addKernel<<<gridSize, blockSize>>>(input.buffer, other.buffer, result.buffer,
+                                        resultWidth, resultHeight,
+                                        input.width, input.height, other.width, other.height,
+                                        input.stride, other.stride, result.stride);
+
+    cudaDeviceSynchronize();
+    return result;
+}
+
+// template definitions
+template Tensor<float> addGPU(const Tensor<float>& input, const Tensor<float>& other);
+template Tensor<double> addGPU(const Tensor<double>& input, const Tensor<double>& other);
+template Tensor<int> addGPU(const Tensor<int>& input, const Tensor<int>& other);

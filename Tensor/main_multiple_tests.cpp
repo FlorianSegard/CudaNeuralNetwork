@@ -169,7 +169,7 @@ void testTensorDOT() {
     Tensor<int> Cgpucpu = Cgpu.switchDevice(false);
     std::cout << "Matrix C: " << C.height << " x " << C.width << std::endl;
 
-    printTensor(Cgpucpu);
+    // printTensor(Cgpucpu);
 
     std::cout << "Tensor Creation Test Passed!\n";
 }
@@ -190,7 +190,7 @@ void testTensorDOT2() {
     // printTensor(B);
 
     auto startTime = std::chrono::high_resolution_clock::now();
-    // Tensor<int> C = A.dot(B);
+    Tensor<int> C = A.dot(B);
     auto endTime = std::chrono::high_resolution_clock::now();
 
 
@@ -208,7 +208,7 @@ void testTensorDOT2() {
     endTime = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
-    std::cout << "Time elapsed GPU naiv: " << duration << " ms" << std::endl;
+    std::cout << "Time elapsed GPU: " << duration << " ms" << std::endl;
 
 
     Tensor<int> Cgpucpu = Cgpu.switchDevice(false);
@@ -219,6 +219,50 @@ void testTensorDOT2() {
     std::cout << "Tensor Creation Test Passed!\n";
 }
 
+
+void testTensorADD2() {
+    Tensor<int> A(20, 20, false);
+    Tensor<int> B(1, 20, false);
+
+    std::cout << "Matrix A: " << A.height << " x " << A.width << std::endl;
+    std::cout << "Matrix B: " << B.height << " x " << B.width << std::endl;
+
+
+    fillTensor(A);
+    fillTensor(B);
+
+    printTensor(A);
+    printTensor(B);
+
+    auto startTime = std::chrono::high_resolution_clock::now();
+    Tensor<int> C = A + B;
+    auto endTime = std::chrono::high_resolution_clock::now();
+
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    std::cout << "Time elapsed CPU: " << duration << " ms" << std::endl;
+
+    printTensor(C);
+
+
+    Tensor<int> Agpu = A.switchDevice(true);
+    Tensor<int> Bgpu = B.switchDevice(true);
+
+    startTime = std::chrono::high_resolution_clock::now();
+    Tensor<int> Cgpu = Agpu + Bgpu;
+    endTime = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+    std::cout << "Time elapsed GPU: " << duration << " ms" << std::endl;
+
+
+    Tensor<int> Cgpucpu = Cgpu.switchDevice(false);
+    std::cout << "Matrix C: " << Cgpucpu.height << " x " << Cgpucpu.width << std::endl;
+
+    printTensor(Cgpucpu);
+
+    std::cout << "Tensor Creation Test Passed!\n";
+}
 
 
 
@@ -231,7 +275,8 @@ int main() {
     testTensorTransposeGPU();
     testTensorFillZeroAndSwitchDevice();
     // testTensorDOT();
-    testTensorDOT2();
+    // testTensorDOT2();
+    testTensorADD2();
     std::cout << "All tests passed!\n";
     return 0;
 }
