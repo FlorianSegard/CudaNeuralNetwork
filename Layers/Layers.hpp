@@ -32,13 +32,13 @@ struct LayerParams {
 };
 
 struct Layer {
-    LayerParams* params = nullptr;
+    LayerParams params;
     bool device = false;
     bool require_grad = true;
     Tensor<float> lastInput;
 
-    Layer(LayerParams* params = nullptr, bool device = false)
-        : params(std::move(params)), device(device), require_grad(require_grad) {}
+    Layer(int inputSize = 0, int outputSize = 0, bool device = false, bool require_grad = true)
+        : params(inputSize, outputSize, device), device(device), require_grad(require_grad) {}
     
     virtual ~Layer() = default;
 
