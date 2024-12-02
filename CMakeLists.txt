@@ -8,7 +8,7 @@ set(CMAKE_CUDA_STANDARD 17)
 find_package(CUDAToolkit REQUIRED)
 
 add_executable(tensor_test
-    Tensor/main_test.cpp
+    Tensor/main_multiple_tests.cpp
     Tensor/Tensor.cpp
     Tensor/Tensor.cu
     Tensor/Tensor.hpp
