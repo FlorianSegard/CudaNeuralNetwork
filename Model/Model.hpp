@@ -4,17 +4,29 @@
 #include <string_view>
 #include <memory>
 #include "../Layers/Layers.hpp"
+#include "../Optimizer/Optimizer.hpp"
+#include <optional>
+
 
 struct Model
 {
     std::vector<Layer> layers;
+    SGD optimizer;
 
-    Model() : layers() {}
-    Model(const std::vector<Layer>& other_layers) : layers(other_layers) {}
+    Model() : layers(), optimizer(0.001f) {}
+
+    Model(const std::vector<Layer>& other_layers) : layers(other_layers), optimizer(0.001f) {}
+
+    Model(const std::vector<Layer>& other_layers, const SGD& opt) 
+        : layers(other_layers), optimizer(opt) {}
 
     void addLayer(Layer layer_toadd)
     {
         layers.push_back(layer_toadd);
+    }
+
+    void setOptimizer(const SGD& opt) {
+        optimizer = opt;
     }
 
     Tensor<float> forward(Tensor<float> input) 
@@ -30,6 +42,12 @@ struct Model
         Tensor<float> dInput = dOutput;
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
             dInput = it->backward(dInput);
+        }
+    }
+
+    void step() {
+        for (auto& layer : layers) {
+            optimizer.update(layer.params);
         }
     }
 };
