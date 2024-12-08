@@ -1,30 +1,45 @@
 #pragma once
-#include "Layers.hpp"
+#include "../Layers.hpp"
 #include <iostream>
 #include <typeinfo>
 
-// Example for Linear layer:
+Tensor<float> backwardLinearGPU(Tensor<float> input);
+
+Tensor<float> backwardLinearCPU(Tensor<float> input);
+
+
 struct Linear : public Layer {
+    LayerParams params;
+
     Linear(int inputSize, int outputSize, bool device = false, bool require_grad = true)
-        : Layer(new LayerParams(inputSize, outputSize, device), device) {
-        this->require_grad = require_grad;
+            : Layer(require_grad), params(inputSize, outputSize, device) {}
+
+    Tensor<float> computeForward(Tensor<float>& input) override {
+        // Linear forward: output = input @ weights.T + biases
+        Tensor<float> weightsT = params.weights.transpose();
+
+        // Dot matrix product [batch_size, input_size] @ [input_size, output_size]
+        Tensor<float> output = input.dot(weightsT);
+
+        // Add biases
+        return output + params.biases;
     }
 
-    Tensor<float> computeForward(Tensor<float> input) override {
-        Tensor<float> output(input.width, params->outputSize, device); // idk about this
-        if (device) {
-            forwardLinearGPU(input, output);
-        } else {
-            forwardLinearCPU(input, output);
+    Tensor<float> backward(Tensor<float>& dOutput) override {
+        // dInput = dOutput @ weights
+        Tensor<float> dInput = dOutput.dot(params.weights);
+
+        if (require_grad) {
+            // dWeights = input.T @ dOutput
+            Tensor<float> inputT = this->lastInput.transpose();
+            params.dWeights = inputT.dot(dOutput);
+
+            params.dBiases = dOutput.transpose().dot(Tensor<float>(1, dOutput.height, true));  // Using dot as reduction
         }
     }
 
-    void backward(Tensor<float> dOutput, Tensor<float> dInput) override { // probably should put Tensor
-        if (device) {
-            backwardLinearGPU(dOutput, dInput);
-        } else {
-            backwardLinearCPU(dOutput, dInput);
-        }
-        return dInput;
+    void setDevice(bool device) {
+        params.switchDevice(device);
+        onDeviceChanged(device);
     }
 };

@@ -12,6 +12,9 @@ add_executable(tensor_test
     Tensor/Tensor.cpp
     Tensor/Tensor.cu
     Tensor/Tensor.hpp
+    Layers/Linear/Linear.cpp
+    Layers/Linear/Linear.hpp
+    Layers/Layers.hpp
 )
 
 target_include_directories(tensor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
