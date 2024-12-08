@@ -34,8 +34,12 @@ struct Linear : public Layer {
             Tensor<float> inputT = this->lastInput.transpose();
             params.dWeights = inputT.dot(dOutput);
 
-            params.dBiases = dOutput.transpose().dot(Tensor<float>(1, dOutput.height, true));  // Using dot as reduction
+            Tensor<float> a = Tensor<float>(1, dOutput.height, true);
+            a.fillOnes();
+            params.dBiases = dOutput.transpose().dot(a);
         }
+        
+        return dInput;
     }
 
     void setDevice(bool device) {

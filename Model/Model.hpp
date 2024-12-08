@@ -4,8 +4,11 @@
 #include <string_view>
 #include <memory>
 #include "../Layers/Layers.hpp"
-#include "../Optimizer/Optimizer.hpp"
+#include "../Optimizer/Optimize.hpp"
+#include "Layers/Linear/Linear.hpp"
 #include <optional>
+#include <utility>
+#include <vector>
 
 
 struct Model
@@ -15,14 +18,15 @@ struct Model
 
     Model() : layers(), optimizer(0.001f) {}
 
-    Model(const std::vector<Layer>& other_layers) : layers(other_layers), optimizer(0.001f) {}
+    explicit Model(std::vector<Layer>& other_layers)
+        : layers(std::move(other_layers)), optimizer(0.001f) {}
 
-    Model(const std::vector<Layer>& other_layers, const SGD& opt) 
-        : layers(other_layers), optimizer(opt) {}
+    Model(std::vector<Layer>& other_layers, SGD opt)
+        : layers(std::move(other_layers)), optimizer(std::move(opt)) {}
 
-    void addLayer(Layer layer_toadd)
+    void addLayer(Layer& layer)
     {
-        layers.push_back(layer_toadd);
+        layers.push_back(std::move(layer));
     }
 
     void setOptimizer(const SGD& opt) {
@@ -37,7 +41,7 @@ struct Model
         return input;
     }
 
-    void backward(Tensor<float> output)
+    void backward(Tensor<float> dOutput)
     {
         Tensor<float> dInput = dOutput;
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
@@ -47,7 +51,9 @@ struct Model
 
     void step() {
         for (auto& layer : layers) {
-            optimizer.update(layer.params);
+            if (auto* linear = dynamic_cast<Linear*>(layer.get())) {
+                optimizer.update(linear->params);
+            }
         }
     }
 };

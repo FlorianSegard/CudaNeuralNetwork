@@ -31,6 +31,17 @@ void fillZeroGPU(Tensor<T>& input);
 template <class T>
 void fillZeroCPU(Tensor<T>& input);
 
+// -------------------------------------------- FILL UP WITH ONES -------------------------------------------- \\
+
+template <class T>
+__global__ void fillOnesKernel(T* input, int width, int height, size_t inStride);
+
+template <class T>
+void fillOnesGPU(Tensor<T>& input);
+
+template <class T>
+void fillOnesCPU(Tensor<T>& input);
+
 // -------------------------------------------- DOT -------------------------------------------- \\
 
 template <class T>
@@ -52,6 +63,18 @@ Tensor<T> addGPU(const Tensor<T>& input, const Tensor<T>& other);
 
 template <class T>
 Tensor<T> addCPU(const Tensor<T>& input, const Tensor<T>& other);
+
+// -------------------------------------------- SUB -------------------------------------------- \\
+
+template <class T>
+__global__ void scalarMultiplyKernel(const T* input, T* output, T scalar, int width, int height, size_t inStride, size_t outStride);
+
+template <class T>
+Tensor<T> scalarMultiplyGPU(const Tensor<T>& input, T scalar);
+
+template <class T>
+Tensor<T> scalarMultiplyCPU(const Tensor<T>& input, T scalar);
+
 
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
@@ -86,12 +109,16 @@ struct Tensor : TensorView<T> {
     const T* operator[](int y) const;
 
     Tensor operator+(const Tensor& other) const;
-
+    Tensor operator-(const Tensor& other) const;
+    Tensor operator*(float scalar) const;
 
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
+
     void fillZero();
+    void fillOnes();
+
     Tensor dot(const Tensor& other);
 };
 
@@ -155,6 +182,14 @@ const T* Tensor<T>::operator[](int y) const {
     return (T*)((std::byte*)this->buffer + y * this->stride);
 }
 
+template <class T>
+Tensor<T> Tensor<T>::operator*(float scalar) const {
+    if (this->device)
+        return scalarMultiplyGPU(*this, scalar);
+    else
+        return scalarMultiplyCPU(*this, scalar);
+}
+
 // template <class T>
 // Tensor<T> Tensor<T>::operator+(Tensor<T>& other) {
 //     if ((this->width != other.width && this->width != 1 && other.width != 1) ||
@@ -182,6 +217,10 @@ Tensor<T> Tensor<T>::operator+(const Tensor<T>& other) const {
         return addCPU(*this, other);
 }
 
+template <class T>
+Tensor<T> Tensor<T>::operator-(const Tensor<T>& other) const {
+    return *this + (other * -1.0f);
+}
 
 template <class T>
 Tensor<T> Tensor<T>::clone() const {
@@ -232,6 +271,14 @@ void Tensor<T>::fillZero() {
         fillZeroGPU(*this);
     else
         fillZeroCPU(*this);
+}
+
+template <class T>
+void Tensor<T>::fillOnes() {
+    if (this->device)
+        fillOnesGPU(*this);
+    else
+        fillOnesCPU(*this);
 }
 
 template <class T>

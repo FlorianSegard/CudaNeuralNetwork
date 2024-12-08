@@ -1,3 +1,5 @@
+#include "Layers/Layers.hpp"
+
 class Optimizer {
 public:
     virtual ~Optimizer() = default;
@@ -11,7 +13,7 @@ private:
     float learningRate;
 
 public:
-    explicit SGD(float lr) : learningRate(lr) {}
+    explicit SGD(const float lr) : learningRate(lr) {}
 
     void update(LayerParams& params) override {
         params.weights = params.weights - params.dWeights * learningRate;

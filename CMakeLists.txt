@@ -15,6 +15,8 @@ add_executable(tensor_test
     Layers/Linear/Linear.cpp
     Layers/Linear/Linear.hpp
     Layers/Layers.hpp
+    Model/Model.hpp
+    Optimizer/Optimize.hpp
 )
 
 target_include_directories(tensor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
