@@ -85,3 +85,40 @@ Tensor<T> addCPU(const Tensor<T>& input, const Tensor<T>& other) {
 template Tensor<float> addCPU(const Tensor<float>& input, const Tensor<float>& other);
 template Tensor<double> addCPU(const Tensor<double>& input, const Tensor<double>& other);
 template Tensor<int> addCPU(const Tensor<int>& input, const Tensor<int>& other);
+
+// ----------------------------------------------------------- Scalar Mult ----------------------------------------------------------- \\
+
+template <class T>
+Tensor<T> scalarMultiplyCPU(const Tensor<T>& input, const T scalar) {
+    Tensor<T> result(input.width, input.height, false);
+
+    for (int y = 0; y < input.height; y++) {
+        for (int x = 0; x < input.width; x++) {
+            int inputIndex = (x % input.width) + (input.stride / sizeof(T)) * (y % input.height);
+
+            result.buffer[inputIndex] = input.buffer[inputIndex] * scalar;
+        }
+    }
+    return result;
+}
+
+// template definitions
+template Tensor<float> scalarMultiplyCPU(const Tensor<float>& input, const float other);
+template Tensor<double> scalarMultiplyCPU(const Tensor<double>& input, const double other);
+template Tensor<int> scalarMultiplyCPU(const Tensor<int>& input, const int other);
+
+// ----------------------------------------------------------- FILE ONES ----------------------------------------------------------- \\
+
+template <class T>
+void fillOnesCPU(Tensor<T>& input) {
+    for (int y = 0; y < input.height; ++y) {
+        for (int x = 0; x < input.width; ++x) {
+            input[y][x] = T(1);
+        }
+    }
+}
+
+// template definitions
+template void fillOnesCPU(Tensor<float>& input);
+template void fillOnesCPU(Tensor<double>& input);
+template void fillOnesCPU(Tensor<int>& input);

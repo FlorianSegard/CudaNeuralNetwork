@@ -63,7 +63,6 @@ void fillZeroGPU(Tensor<T>& input) {
     if (err != cudaSuccess) {
         throw std::runtime_error(cudaGetErrorString(err));
     }
-
 }
 
 // template definitions
@@ -215,3 +214,72 @@ Tensor<T> addGPU(const Tensor<T>& input, const Tensor<T>& other) {
 template Tensor<float> addGPU(const Tensor<float>& input, const Tensor<float>& other);
 template Tensor<double> addGPU(const Tensor<double>& input, const Tensor<double>& other);
 template Tensor<int> addGPU(const Tensor<int>& input, const Tensor<int>& other);
+
+// ----------------------------------------------------------- Scalar Mult ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void scalarMultiplyKernel(const T* input, T* output, T scalar, int width, int height, size_t inStride, size_t outStride) {    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        int result = y * (outStride / sizeof(T)) + x;
+        int input_index = y * (inStride / sizeof(T)) + x;
+        output[result] = input[input_index] * scalar;
+    }
+}
+
+template <class T>
+Tensor<T> scalarMultiplyGPU(const Tensor<T>& input, const T scalar) {
+    Tensor<T> result(input.width, input.height, true);
+
+    dim3 blockSize(16, 16);
+    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
+                  (input.height + blockSize.y - 1) / blockSize.y);
+
+    scalarMultiplyKernel<<<gridSize, blockSize>>>(input.buffer, result.buffer, scalar,
+                                                  input.width, input.height,
+                                                  input.stride, result.stride);
+    cudaDeviceSynchronize();
+    return result;
+}
+
+// template definitions
+template Tensor<float> scalarMultiplyGPU(const Tensor<float>& input, const float scalar);
+template Tensor<double> scalarMultiplyGPU(const Tensor<double>& input, const double scalar);
+template Tensor<int> scalarMultiplyGPU(const Tensor<int>& input, const int scalar);
+
+// ----------------------------------------------------------- FILE ONES ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void fillOnesKernel(T* input, int width, int height, size_t stride) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        int result = y * (stride / sizeof(T)) + x;
+        input[result] = T(1);
+    }
+}
+
+template <class T>
+void fillOnesGPU(Tensor<T>& input) {
+
+    dim3 blockSize(32, 32);
+    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
+                  (input.height + blockSize.y - 1) / blockSize.y);
+
+    fillOnesKernel<T><<<gridSize, blockSize>>>(
+            input.buffer, input.width, input.height, input.stride
+    );
+    cudaDeviceSynchronize();
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+}
+
+// template definitions
+template void fillOnesGPU(Tensor<float>& input);
+template void fillOnesGPU(Tensor<double>& input);
+template void fillOnesGPU(Tensor<int>& input);

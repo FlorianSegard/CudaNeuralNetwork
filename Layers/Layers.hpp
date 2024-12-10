@@ -1,5 +1,5 @@
 #pragma once
-#include "Tensor.hpp"
+#include "../Tensor/Tensor.hpp"
 #include <iostream>
 #include <typeinfo>
 
@@ -33,33 +33,24 @@ struct LayerParams {
 
 struct Layer {
     LayerParams params;
-    bool device = false;
     bool require_grad = true;
     Tensor<float> lastInput;
 
-    Layer(int inputSize = 0, int outputSize = 0, bool device = false, bool require_grad = true)
-        : params(inputSize, outputSize, device), device(device), require_grad(require_grad) {}
+    explicit Layer(int inputSize, int outputSize, bool device, bool require_grad = true)
+        : params(inputSize, outputSize, device), require_grad(require_grad) {}
     
     virtual ~Layer() = default;
 
-    Tensor<float> forward(const Tensor<float>& input) {
-        lastInput = input;
+    Tensor<float> forward(Tensor<float>& input) {
+        lastInput = input.clone();
         return computeForward(input);
     }
 
-    virtual Tensor<float> backward(const Tensor<float>& dOutput) = 0;
-
-    void setDevice(bool device) {
-        this->device = device;
-        if (params) {
-            params->switchDevice(device);
-        }
-        onDeviceChanged(device);
-    }
+    virtual Tensor<float> backward(Tensor<float>& dOutput) = 0;
 
 protected:
 
-    virtual Tensor<float> computeForward(const Tensor<float>& input) = 0;
+    virtual Tensor<float> computeForward(Tensor<float>& input) = 0;
 
     virtual void onDeviceChanged(bool device) {
         const char* layerType = typeid(*this).name(); // Get derived class name
@@ -70,22 +61,3 @@ protected:
         }
     }
 };
-
-// Example for activation Layer ReLu:
-struct ReLu : public Layer {
-    ReLu(bool device) : Layer(device) {}
-
-    void computeForward(const Tensor<float>& input) override { // probably should put Tensor to get input size to check if the size is correct
-        for (int i = 0; i < inputSize; ++i) {
-            output[i] = fmaxf(0.0f, input[i]);
-        }
-    }
-
-    void backward(const Tensor<float>& dOutput) override { // probably should put Tensor
-        for (int i = 0; i < inputSize; ++i) {
-            dInput[i] = dOutput[i] > 0 ? dOutput[i] : 0.0f;
-        }
-    }
-};
-
-

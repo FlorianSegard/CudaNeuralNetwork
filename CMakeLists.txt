@@ -7,12 +7,16 @@ set(CMAKE_CUDA_STANDARD 17)
 
 find_package(CUDAToolkit REQUIRED)
 
-add_executable(tensor_test
-    Tensor/main_multiple_tests.cpp
+add_executable(first_test_model
     Tensor/Tensor.cpp
     Tensor/Tensor.cu
     Tensor/Tensor.hpp
+    Model/Model.hpp
+    Optimizer/Optimizer.hpp
+    Layers/Layers.hpp
+    Layers/Linear/Linear.hpp
+    main.cpp
 )
 
-target_include_directories(tensor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(tensor_test CUDA::cudart)
+target_include_directories(first_test_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(first_test_model CUDA::cudart)
