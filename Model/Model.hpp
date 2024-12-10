@@ -39,8 +39,8 @@ struct Model
         return input;
     }
 
-    void backward(Tensor<float> dOutput) {
-        Tensor<float> dInput = dOutput;
+    void backward(Tensor<float>& dOutput) {
+        Tensor<float> dInput = dOutput.clone();
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
             dInput = (*it)->backward(dInput);
         }
