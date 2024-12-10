@@ -1,3 +1,5 @@
+#include "../Layers/Layers.hpp"
+
 class Optimizer {
 public:
     virtual ~Optimizer() = default;
