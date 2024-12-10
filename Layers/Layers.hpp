@@ -32,11 +32,12 @@ struct LayerParams {
 };
 
 struct Layer {
+    LayerParams params;
     bool require_grad = true;
     Tensor<float> lastInput;
 
-    explicit Layer(bool require_grad = true)
-        : require_grad(require_grad) {}
+    explicit Layer(int inputSize, int outputSize, bool device, bool require_grad = true)
+        : params(inputSize, outputSize, device), require_grad(require_grad) {}
     
     virtual ~Layer() = default;
 

@@ -9,10 +9,10 @@ Tensor<float> backwardLinearCPU(Tensor<float> input);
 
 
 struct Linear : public Layer {
-    LayerParams params;
+
 
     Linear(int inputSize, int outputSize, bool device = false, bool require_grad = true)
-            : Layer(require_grad), params(inputSize, outputSize, device) {}
+            : Layer(inputSize, outputSize, device, require_grad){}
 
     Tensor<float> computeForward(Tensor<float>& input) override {
         // Linear forward: output = input @ weights.T + biases

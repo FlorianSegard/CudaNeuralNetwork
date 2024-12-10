@@ -18,7 +18,7 @@ struct Model
 
     Model() : layers(), optimizer(0.001f) {}
 
-    explicit Model(std::vector<Layer>& other_layers)
+    explicit Model(std::vector<Layer> other_layers)
         : layers(std::move(other_layers)), optimizer(0.001f) {}
 
     Model(std::vector<Layer>& other_layers, SGD opt)
@@ -26,7 +26,7 @@ struct Model
 
     void addLayer(Layer& layer)
     {
-        layers.push_back(std::move(layer));
+        layers.push_back(layer);
     }
 
     void setOptimizer(const SGD& opt) {
