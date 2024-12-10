@@ -5,12 +5,13 @@
 
 // Example for Linear layer:
 struct Linear : public Layer {
-    LayerParams params;
-
     Linear(int inputSize, int outputSize, bool device = false, bool require_grad = true)
-        : Layer(device), params(inputSize, outputSize, device), require_grad(require_grad) {}
+        : Layer(new LayerParams(inputSize, outputSize, device), device) {
+        this->require_grad = require_grad;
+    }
 
-    Tensor<float> forward(Tensor<float> input, Tensor<float> output) override { // probably should put Tensor to get input size to check if the size is correct
+    Tensor<float> computeForward(Tensor<float> input) override {
+        Tensor<float> output(input.width, params->outputSize, device); // idk about this
         if (device) {
             forwardLinearGPU(input, output);
         } else {
@@ -24,5 +25,6 @@ struct Linear : public Layer {
         } else {
             backwardLinearCPU(dOutput, dInput);
         }
+        return dInput;
     }
 };

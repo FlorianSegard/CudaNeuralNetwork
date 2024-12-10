@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <memory>
+#include <iostream>
 
 template <class T>
 struct Tensor;
@@ -29,6 +30,28 @@ void fillZeroGPU(Tensor<T>& input);
 
 template <class T>
 void fillZeroCPU(Tensor<T>& input);
+
+// -------------------------------------------- DOT -------------------------------------------- \\
+
+template <class T>
+__global__ void dotGPUKernel(T* input, T* other, T* result, int width_input, int height_input, int width_output, size_t inputStride, size_t otherStride, size_t resultStride);
+
+template <class T>
+Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other);
+
+template <class T>
+Tensor<T> dotCPU(const Tensor<T>& input, const Tensor<T>& other);
+
+// -------------------------------------------- ADD -------------------------------------------- \\
+
+template <class T>
+__global__ void addKernel(const T* input, const T* other, T* result, int width, int height, int inputWidth, int inputHeight, int otherWidth, int otherHeight, size_t inputStride, size_t otherStride, size_t resultStride);
+
+template <class T>
+Tensor<T> addGPU(const Tensor<T>& input, const Tensor<T>& other);
+
+template <class T>
+Tensor<T> addCPU(const Tensor<T>& input, const Tensor<T>& other);
 
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
@@ -57,13 +80,19 @@ struct Tensor : TensorView<T> {
     Tensor(const Tensor& other) = delete;
     Tensor& operator=(const Tensor& other) = delete;
 
-    __host__ __device__ T* operator[](int y);
-    __host__ __device__ const T* operator[](int y) const;
+    
+
+    T* operator[](int y);
+    const T* operator[](int y) const;
+
+    Tensor operator+(const Tensor& other) const;
+
 
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
     void fillZero();
+    Tensor dot(const Tensor& other);
 };
 
 template <class T>
@@ -105,7 +134,7 @@ Tensor<T>& Tensor<T>::operator=(Tensor&& other) noexcept {
 }
 
 template <class T>
-__host__ __device__ T* Tensor<T>::operator[](int y) {
+T* Tensor<T>::operator[](int y) {
     if (this->device)
         return (T*)((std::byte*)this->buffer + y * this->stride);
 
@@ -116,7 +145,7 @@ __host__ __device__ T* Tensor<T>::operator[](int y) {
 }
 
 template <class T>
-__host__ __device__ const T* Tensor<T>::operator[](int y) const {
+const T* Tensor<T>::operator[](int y) const {
     if (this->device)
         return (T*)((std::byte*)this->buffer + y * this->stride);
 
@@ -125,6 +154,34 @@ __host__ __device__ const T* Tensor<T>::operator[](int y) const {
     }
     return (T*)((std::byte*)this->buffer + y * this->stride);
 }
+
+// template <class T>
+// Tensor<T> Tensor<T>::operator+(Tensor<T>& other) {
+//     if ((this->width != other.width && this->width != 1 && other.width != 1) ||
+//         (this->height != other.height && this->height != 1 && other.height != 1)) {
+//         throw std::invalid_argument("Tensors are not broadcast-compatible for addition.");
+//     }
+
+
+//     if (this->device)
+//         return addGPU(*this, other);
+//     else
+//         return addCPU(*this, other);
+// }
+
+template <class T>
+Tensor<T> Tensor<T>::operator+(const Tensor<T>& other) const {
+    if ((this->width != other.width && this->width != 1 && other.width != 1) || // to take into account the diffusion if one of the height or width is 1
+        (this->height != other.height && this->height != 1 && other.height != 1)) {
+        throw std::invalid_argument("Tensors are not broadcast-compatible for addition.");
+    }
+
+    if (this->device)
+        return addGPU(*this, other);
+    else
+        return addCPU(*this, other);
+}
+
 
 template <class T>
 Tensor<T> Tensor<T>::clone() const {
@@ -160,6 +217,7 @@ Tensor<T> Tensor<T>::switchDevice(bool gpu) {
     return result;
 }
 
+// if transpose in place be careful to change the stride
 template <class T>
 Tensor<T> Tensor<T>::transpose() const {
     if (this->device)
@@ -174,6 +232,16 @@ void Tensor<T>::fillZero() {
         fillZeroGPU(*this);
     else
         fillZeroCPU(*this);
+}
+
+template <class T>
+Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
+    if (this->width != other.height)
+        throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+    if (this->device)
+        return dotGPU(*this, other);
+    else
+        return dotCPU(*this, other);
 }
 
 //TODO implement random filling test later maybe: glorot filling
