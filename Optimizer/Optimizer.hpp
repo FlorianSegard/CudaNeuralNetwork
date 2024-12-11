@@ -17,7 +17,7 @@ public:
 
     void update(LayerParams& params) override {
         params.weights = params.weights - params.dWeights * learningRate;
-        params.biases = params.weights - params.dBiases * learningRate;
+        params.biases = params.biases - params.dBiases * learningRate;
     }
 };
 
