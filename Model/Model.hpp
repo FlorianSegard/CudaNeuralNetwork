@@ -33,8 +33,11 @@ struct Model
     }
 
     Tensor<float> forward(Tensor<float> input) {
+        std::cout << "4" << std::endl;
         for (auto& layer : layers) {
             input = layer->forward(input);
+            std::cout << "7" << std::endl;
+
         }
         return input;
     }
@@ -53,4 +56,11 @@ struct Model
             }
         }
     }
+
+    void switchDevice(bool device) {
+        for (auto& layer : layers) {
+            layer->switchDevice(device);
+        }
+    }
+
 };
