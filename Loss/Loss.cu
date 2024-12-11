@@ -1,7 +1,6 @@
 #include "Loss.hpp"
 
 __global__ void sumOfSquaresKernel(const float* input, int width, int height, size_t stride, float* partialSums) {
-    // Convert stride in bytes to number of elements of type T per row
     int pitch = stride / sizeof(float);
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;

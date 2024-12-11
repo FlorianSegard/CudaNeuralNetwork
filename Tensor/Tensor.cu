@@ -88,7 +88,7 @@ template void fillZeroGPU(Tensor<int>& input);
 //             T b_val = other[x + k * otherStride / sizeof(T)];
 //             sum += a_val * b_val;
 //         }
-//         result[x + y * otherStride / sizeof(T)] = sum;
+//         result[x + y * resultStride / sizeof(T)] = sum;
 //     }
 // }
 
