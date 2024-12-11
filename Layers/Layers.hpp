@@ -23,10 +23,10 @@ struct LayerParams {
     // TODO in Tensor.hpp
     void switchDevice(bool device) {
         // Logic to reallocate or transfer data between CPU and GPU
-        weights.switchDevice(device);
-        biases.switchDevice(device);
-        dWeights.switchDevice(device);
-        dBiases.switchDevice(device);
+        weights = weights.switchDevice(device);
+        biases = biases.switchDevice(device);
+        dWeights = dWeights.switchDevice(device);
+        dBiases = dBiases.switchDevice(device);
     }
 
 };
@@ -46,7 +46,13 @@ struct Layer {
         return computeForward(input);
     }
 
+    void switchDevice(bool device) {
+        params.switchDevice(device);
+        onDeviceChanged(device);
+    }
+
     virtual Tensor<float> backward(Tensor<float>& dOutput) = 0;
+
 
 protected:
 
