@@ -15,6 +15,9 @@ add_executable(first_test_model
     Optimizer/Optimizer.hpp
     Layers/Layers.hpp
     Layers/Linear/Linear.hpp
+    Loss/Loss.cpp
+    Loss/Loss.cu
+    Loss/Loss.hpp
     main.cpp
 )
 
