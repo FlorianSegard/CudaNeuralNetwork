@@ -13,9 +13,9 @@ struct LayerParams {
 
     LayerParams() = default; // Default constructor
     LayerParams(int inputSize, int outputSize, bool device)
-        : weights(inputSize, outputSize, device),
+        : weights(outputSize, inputSize, device),
           biases(outputSize, 1, device),
-          dWeights(inputSize, outputSize, device),
+          dWeights(outputSize, inputSize, device),
           dBiases(outputSize, 1, device),
           inputSize(inputSize), outputSize(outputSize) {}
 
