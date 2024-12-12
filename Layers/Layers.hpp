@@ -29,6 +29,11 @@ struct LayerParams {
         dBiases = dBiases.switchDevice(device);
     }
 
+    void zeroGrad() {
+        // Logic to reallocate or transfer data between CPU and GPU
+        dWeights.fillZero();
+        dBiases.fillZero();
+    }
 };
 
 struct Layer {
@@ -49,6 +54,10 @@ struct Layer {
     void switchDevice(bool device) {
         params.switchDevice(device);
         onDeviceChanged(device);
+    }
+
+    void zeroGrad() {
+        params.zeroGrad();
     }
 
     virtual Tensor<float> backward(Tensor<float>& dOutput) = 0;
