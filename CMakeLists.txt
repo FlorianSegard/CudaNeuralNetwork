@@ -18,6 +18,9 @@ add_executable(first_test_model
     Loss/Loss.cpp
     Loss/Loss.cu
     Loss/Loss.hpp
+    Layers/ReLU/ReLU.cpp
+    Layers/ReLU/ReLU.cu
+    Layers/ReLU/ReLU.hpp
     main.cpp
 )
 
