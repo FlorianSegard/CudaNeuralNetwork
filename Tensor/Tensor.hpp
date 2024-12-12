@@ -115,6 +115,7 @@ struct Tensor : TensorView<T> {
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
+    void print();
 
     void fillZero();
     void fillOnes();
@@ -290,5 +291,23 @@ Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
     else
         return dotCPU(*this, other);
 }
+
+
+template <class T>
+void Tensor<T>::print() {
+    if (this->device) {
+        throw std::runtime_error("Tensor is on GPU; switch to CPU before printing.");
+    }
+
+    std::cout << "Tensor (CPU): " << this->height << "x" << this->width << std::endl;
+    for (int y = 0; y < this->height; y++) {
+        for (int x = 0; x < this->width; x++) {
+            std::cout << (*this)[y][x] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+
 
 //TODO implement random filling test later maybe: glorot filling
