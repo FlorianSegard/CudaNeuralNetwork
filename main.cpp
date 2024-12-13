@@ -3,6 +3,7 @@
 #include "Layers/Linear/Linear.hpp"
 #include "Tensor/Tensor.hpp"
 #include "Loss/Loss.hpp"
+#include "Loader/ModelLoader.hpp"
 
 int main() {
     // Create a model
@@ -84,10 +85,11 @@ int main() {
 
     }
 
+    Model model_onnx = ModelLoader::loadONNX("/home/alex/CudaNeuralNetwork/onnx_generator/simple_linear_model.onnx", true);
     // Print out something from model parameters to verify changes
     // For instance, if you have Linear layers, you can inspect their params
     // Assuming the first layer is a Linear layer:
     // model.layers[0] is a std::unique_ptr<Layer>, dynamic_cast to Linear:
-
+    std::cout << "=== END ==="<<std::endl;
     return 0;
 }

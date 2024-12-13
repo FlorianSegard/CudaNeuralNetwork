@@ -18,7 +18,7 @@ struct Model
 
     Model() : optimizer(0.001f) {}
 
-    explicit Model(std::vector<std::unique_ptr<Layer>> other_layers)
+    explicit Model(std::vector<std::unique_ptr<Layer>>& other_layers)
             : layers(std::move(other_layers)), optimizer(0.001f) {}
 
     Model(std::vector<std::unique_ptr<Layer>>& other_layers, SGD opt)
