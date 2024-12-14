@@ -53,6 +53,19 @@ Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other);
 template <class T>
 Tensor<T> dotCPU(const Tensor<T>& input, const Tensor<T>& other);
 
+
+// -------------------------------------------- TERM TO TERM MULT -------------------------------------------- \\
+
+template <class T>
+__global__ void termtotermMultKernel(const T* input, const T* other, T* result, int width, int height, size_t inputStride, size_t otherStride, size_t resultStride);
+
+template <class T>
+Tensor<T> termtotermMultGPU(const Tensor<T>& input, const Tensor<T>& other);
+
+template <class T>
+Tensor<T> termtotermMultCPU(const Tensor<T>& input, const Tensor<T>& other);
+
+    
 // -------------------------------------------- ADD -------------------------------------------- \\
 
 template <class T>
@@ -121,6 +134,7 @@ struct Tensor : TensorView<T> {
     void fillOnes();
 
     Tensor dot(const Tensor& other);
+    Tensor termtotermMult(const Tensor& other);
 };
 
 template <class T>
@@ -290,6 +304,16 @@ Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
         return dotGPU(*this, other);
     else
         return dotCPU(*this, other);
+}
+
+template <class T>
+Tensor<T> Tensor<T>::termtotermMult(const Tensor<T>& other) {
+    if (this->width != other.width || this->height != other.height)
+        throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+    if (this->device)
+        return termtotermMultGPU(*this, other);
+    else
+        return termtotermMultCPU(*this, other);
 }
 
 

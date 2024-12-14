@@ -59,6 +59,31 @@ template Tensor<float> dotCPU(const Tensor<float>& input, const Tensor<float>& o
 template Tensor<double> dotCPU(const Tensor<double>& input, const Tensor<double>& other);
 template Tensor<int> dotCPU(const Tensor<int>& input, const Tensor<int>& other);
 
+// ----------------------------------------------------------- TERM TO TERM MULT ----------------------------------------------------------- \\
+
+template <class T>
+Tensor<T> termtotermMultCPU(const Tensor<T>& input, const Tensor<T>& other) {
+    Tensor<T> result(input.width, input.height, false);
+
+    for (int y = 0; y < result.height; y++) {
+        for (int x = 0; x < result.width; x++) {
+            int inputIndex = x + (input.stride / sizeof(T)) * y;
+            int otherIndex = x + (other.stride / sizeof(T)) * y;
+            int resultIndex = x + (result.stride / sizeof(T)) * y;
+
+            result.buffer[resultIndex] = input.buffer[inputIndex] + other.buffer[otherIndex];
+        }
+    }
+
+    return result;
+}
+
+// template definitions
+template Tensor<float> termtotermMultCPU(const Tensor<float>& input, const Tensor<float>& other);
+template Tensor<double> termtotermMultCPU(const Tensor<double>& input, const Tensor<double>& other);
+template Tensor<int> termtotermMultCPU(const Tensor<int>& input, const Tensor<int>& other);
+
+
 // ----------------------------------------------------------- ADD ----------------------------------------------------------- \\
 
 template <class T>
@@ -68,8 +93,8 @@ Tensor<T> addCPU(const Tensor<T>& input, const Tensor<T>& other) {
 
     Tensor<T> result(resultWidth, resultHeight, false);
 
-    for (int y = 0; y < resultHeight; ++y) {
-        for (int x = 0; x < resultWidth; ++x) {
+    for (int y = 0; y < resultHeight; y++) {
+        for (int x = 0; x < resultWidth; x++) {
             int inputIndex = (x % input.width) + (input.stride / sizeof(T)) * (y % input.height);
             int otherIndex = (x % other.width) + (other.stride / sizeof(T)) * (y % other.height);
             int resultIndex = x + (result.stride / sizeof(T)) * y;
