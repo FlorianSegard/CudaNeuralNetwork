@@ -17,7 +17,8 @@ inline std::pair<float, Tensor<float>> computeMSELoss(Tensor<float>& predictions
     }
 
     Tensor<float> sub = predictions - targets;
-
+    std::cout << "SUB LOSS ";
+    sub.switchDevice(false).print();
     float sumSq = 0.0f;
     if (predictions.device) {
         sumSq = sumOfSquaresGPU(sub); 

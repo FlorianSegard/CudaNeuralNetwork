@@ -19,7 +19,7 @@ public:
     static std::pair<std::vector<Tensor<float>>, std::vector<int>> loadMNIST(
             const std::string& image_path,
             const std::string& label_path,
-            bool normalize = true,
+            bool normalize = false,
             int max_images = -1) {
 
         std::vector<Tensor<float>> images;
@@ -80,7 +80,10 @@ public:
             // Create new tensor for the image and fill it
             images.emplace_back(784, 1, false);  // Construct tensor in-place
             for (int j = 0; j < rows * cols; j++) {
-                images.back()[0][j] = normalize ? (float)pixels[j] / 255.0f : (float)pixels[j];
+                if (normalize)
+                    images.back()[0][j] = (float)pixels[j] / 255.0f;
+                else
+                    images.back()[0][j] = std::max(std::min((float) pixels[j], (float)1), (float)0);
             }
 
             // Read corresponding label
