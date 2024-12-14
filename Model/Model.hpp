@@ -36,6 +36,8 @@ struct Model
         // std::cout << "4" << std::endl;
         for (auto& layer : layers) {
             input = layer->forward(input);
+            std::cout << "==== OUT LAYER ==== " << std::endl;
+            input.switchDevice(false).print();
             // std::cout << "7" << std::endl;
 
         }

@@ -60,20 +60,35 @@ __global__ void softmaxBackwardKernel(float* output, float* dOutput, float* dInp
 
     if (row >= height) return;
 
-    float* rowOutput = output + row * outStride / sizeof(float);
-    float* rowDOutput = dOutput + row * dOutStride / sizeof(float);
-    float* rowDInput = dInput + row * dOutStride / sizeof(float);
+    extern __shared__ float sharedData[];
+    float* rowOutput  = output  + (row * outStride / sizeof(float));
+    float* rowDOutput = dOutput + (row * dOutStride / sizeof(float));
+    float* rowDInput  = dInput  + (row * dOutStride / sizeof(float));
 
+    // 1. Compute sumVal = sum over j of (y_j * dY_j)
+    float partialSum = 0.0f;
     for (int i = tid; i < width; i += blockDim.x) {
-        float gradient = 0.0f;
+        partialSum += rowOutput[i] * rowDOutput[i];
+    }
 
-        for (int j = 0; j < width; j++) {
-            float delta = (i == j) ? rowOutput[i] * (1.0f - rowOutput[j])
-                                   : -rowOutput[i] * rowOutput[j];
-            gradient += delta * rowDOutput[j];
+    sharedData[tid] = partialSum;
+    __syncthreads();
+
+    // Parallel reduction to get the sumVal
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            sharedData[tid] += sharedData[tid + s];
         }
+        __syncthreads();
+    }
 
-        rowDInput[i] = gradient;
+    float sumVal = sharedData[0];
+
+    // 2. Compute dZ_i = y_i * (dY_i - sumVal)
+    for (int i = tid; i < width; i += blockDim.x) {
+        float Yi = rowOutput[i];
+        float dYi = rowDOutput[i];
+        rowDInput[i] = Yi * (dYi - sumVal);
     }
 }
 

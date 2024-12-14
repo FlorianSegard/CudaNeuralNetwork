@@ -16,23 +16,25 @@ inline std::pair<float, Tensor<float>> computeMSELoss(Tensor<float>& predictions
         throw std::invalid_argument("Dimensions do not match for loss calculation.");
     }
 
-    Tensor<float> sub = predictions - targets;
+    Tensor<float> diff = predictions - targets;
     std::cout << "SUB LOSS ";
-    sub.switchDevice(false).print();
+    diff.switchDevice(false).print();
     float sumSq = 0.0f;
     if (predictions.device) {
-        sumSq = sumOfSquaresGPU(sub); 
+        sumSq = sumOfSquaresGPU(diff);
     } else {
-        sumSq = sumOfSquaresCPU(sub);
+        sumSq = sumOfSquaresCPU(diff);
     }
 
     // Compute MSE: loss = sum((pred - target)^2) / (N)
-    float loss = sumSq / (sub.width * sub.height);
+    const auto N = static_cast<float>(diff.width * diff.height);
+    float loss = sumSq / N;
 
     // Compute gradient dLoss/dPred = 2*(pred - target)/N
 
-    float scale = 2.0f / (sub.width * sub.width);
-    Tensor<float> grad = sub * scale;
-
+    const float scale = 2.0f / N;
+    Tensor<float> grad = diff * scale;
+    std::cout << "loss = " << loss << ", GRAD ";
+    grad.switchDevice(false).print();
     return {loss, std::move(grad)};
 }

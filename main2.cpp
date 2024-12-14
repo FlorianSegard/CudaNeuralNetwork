@@ -2,6 +2,7 @@
 #include "Model/Model.hpp"
 #include "Layers/Linear/Linear.hpp"
 #include "Layers/ReLU/ReLU.hpp"
+#include "Layers/Softmax/Softmax.hpp"
 #include "Tensor/Tensor.hpp"
 #include "Loss/Loss.hpp"
 #include "Loader/ModelLoader.hpp"
@@ -9,7 +10,7 @@
 
 const int BATCH_SIZE = 1;
 const int INPUT_FEATURES = 784;  // 28x28 pixels
-const int HIDDEN_FEATURES = 100;
+const int HIDDEN_FEATURES = 20;
 const int OUTPUT_FEATURES = 10;  // 10 digits
 const int TRAIN_SAMPLES = 10;
 const int TEST_SAMPLES = 5;
@@ -98,12 +99,13 @@ int main() {
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
     model.addLayer(std::make_unique<ReLU>());
     model.addLayer(std::make_unique<Linear>(HIDDEN_FEATURES, OUTPUT_FEATURES, onGPU));
+    model.addLayer(std::make_unique<Softmax>());
 
     // Load training data
     std::string train_images_path = "/home/alex/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";
     std::string train_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/train-labels-idx1-ubyte/train-labels-idx1-ubyte";
 
-    auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, true, TRAIN_SAMPLES);
+    auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, false, TRAIN_SAMPLES);
 
     // Training loop
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
@@ -128,9 +130,7 @@ int main() {
             targetGPU.switchDevice(false).print();
 
             // Forward pass
-            std::cout << "PREDICTION ";
             Tensor<float> predictions = model.forward(std::move(inputGPU));
-            predictions.switchDevice(false).print();
 
             // Compute loss and gradient
             auto [loss, dOutput] = computeMSELoss(predictions, targetGPU);
@@ -161,7 +161,7 @@ int main() {
     std::string test_images_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
     std::string test_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte";
 
-    auto [test_images, test_labels] = MNISTLoader::loadMNIST(test_images_path, test_labels_path, true, TEST_SAMPLES);
+    auto [test_images, test_labels] = MNISTLoader::loadMNIST(test_images_path, test_labels_path, false, TEST_SAMPLES);
 
     float test_accuracy = 0.0f;
     float test_loss = 0.0f;

@@ -255,13 +255,13 @@ template Tensor<int> addGPU(const Tensor<int>& input, const Tensor<int>& other);
 // ----------------------------------------------------------- Scalar Mult ----------------------------------------------------------- \\
 
 template <class T>
-__global__ void scalarMultiplyKernel(const T* input, T* output, T scalar, int width, int height, size_t inStride, size_t outStride) {    int x = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void scalarMultiplyKernel(const T* input, T* output, T scalar, int width, int height, size_t inStride, size_t outStride) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        int result = y * (outStride / sizeof(T)) + x;
-        int input_index = y * (inStride / sizeof(T)) + x;
-        output[result] = input[input_index] * scalar;
+        int result = y * (inStride / sizeof(T)) + x;
+        output[result] = input[result] * scalar;
     }
 }
 
