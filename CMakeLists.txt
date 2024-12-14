@@ -40,6 +40,9 @@ add_executable(first_test_model
     Layers/ReLU/ReLU.cpp
     Layers/ReLU/ReLU.cu
     Layers/ReLU/ReLU.hpp
+    Layers/Softmax/Softmax.cpp
+    Layers/Softmax/Softmax.cu
+    Layers/Softmax/Softmax.hpp
     main2.cpp
 )
 

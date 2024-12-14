@@ -3,6 +3,7 @@
 #include <random>
 #include "Model/Model.hpp"
 #include "Layers/Linear/Linear.hpp"
+#include "Layers/Softmax/Softmax.hpp"
 #include "Layers/ReLU/ReLU.hpp"
 #include "Tensor/Tensor.hpp"
 #include "Loss/Loss.hpp"
@@ -46,7 +47,7 @@ std::pair<std::vector<Tensor<float>>, std::vector<Tensor<float>>> generateDatase
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<> d(0, 1); // Normal distribution with mean=0, std=1
+    std::normal_distribution<> d(1, 1); // Normal distribution with mean=0, std=1
 
     for (int i = 0; i < numSamples; i++) {
         Tensor<float> input(inputSize, 1, false);
@@ -76,7 +77,7 @@ int main() {
     model.addLayer(std::make_unique<ReLU>());
 
     model.addLayer(std::make_unique<Linear>(4, OUTPUT_FEATURES, onGPU));
-
+    model.addLayer(std::make_unique<Softmax>());
     // Generate training and testing datasets
     auto [trainInputs, trainTargets] = generateDataset(TRAIN_SIZE, INPUT_FEATURES, OUTPUT_FEATURES);
     auto [testInputs, testTargets] = generateDataset(TEST_SIZE, INPUT_FEATURES, OUTPUT_FEATURES);
@@ -123,7 +124,7 @@ int main() {
             // Update step
             model.step();
 
-            // check_weights(&model);
+            check_weights(&model);
 
             model.zeroGrad();
 

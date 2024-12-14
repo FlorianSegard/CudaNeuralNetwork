@@ -174,6 +174,43 @@ template Tensor<double> dotGPU(const Tensor<double>& input, const Tensor<double>
 template Tensor<int> dotGPU(const Tensor<int>& input, const Tensor<int>& other);
 
 
+// ----------------------------------------------------------- TERM TO TERM MULT ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void termtotermMultKernel(const T* input, const T* other, T* result, int width, int height, size_t inputStride, size_t otherStride, size_t resultStride) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        int inputIndex = x + (inputStride / sizeof(T)) * y;
+        int otherIndex = x + (otherStride / sizeof(T)) * y;
+        int resultIndex = x + (resultStride / sizeof(T)) * y;
+
+        result[resultIndex] = input[inputIndex] * other[otherIndex];
+    }
+}
+
+template <class T>
+Tensor<T> termtotermMultGPU(const Tensor<T>& input, const Tensor<T>& other) {
+    Tensor<T> result(input.width, input.height, true);
+
+    dim3 blockSize(16, 16);
+    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x, 
+                  (input.height + blockSize.y - 1) / blockSize.y);
+
+    termtotermMultKernel<<<gridSize, blockSize>>>(input.buffer, other.buffer, result.buffer,
+                                        result.width, result.height,
+                                        input.stride, other.stride, result.stride);
+
+    cudaDeviceSynchronize();
+    return result;
+}
+
+// template definitions
+template Tensor<float> termtotermMultGPU(const Tensor<float>& input, const Tensor<float>& other);
+template Tensor<double> termtotermMultGPU(const Tensor<double>& input, const Tensor<double>& other);
+template Tensor<int> termtotermMultGPU(const Tensor<int>& input, const Tensor<int>& other);
+
 // ----------------------------------------------------------- ADD ----------------------------------------------------------- \\
 
 template <class T>
