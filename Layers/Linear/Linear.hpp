@@ -70,6 +70,6 @@ struct Linear : public Layer {
         //     std::cout << "width params.dBiases tensor" << " " << params.dBiases.width << std::endl;
         //     std::cout << "height params.dBiases tensor" << " " << params.dBiases.height << std::endl;
         // Calculate input gradients for backprop
-        return dOutput.dot(params.weights.transpose());
+        return dInput;
     }
 };
