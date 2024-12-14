@@ -33,10 +33,10 @@ struct Model
     }
 
     Tensor<float> forward(Tensor<float> input) {
-        std::cout << "4" << std::endl;
+        // std::cout << "4" << std::endl;
         for (auto& layer : layers) {
             input = layer->forward(input);
-            std::cout << "7" << std::endl;
+            // std::cout << "7" << std::endl;
 
         }
         return input;
@@ -63,4 +63,9 @@ struct Model
         }
     }
 
+    void zeroGrad() {
+        for (auto& layer : layers) {
+            layer->zeroGrad();
+        }
+    }
 };
