@@ -37,7 +37,7 @@ add_executable(first_test_model
     Loss/Loss.cu
     Loss/Loss.hpp
     Loader/ModelLoader.hpp
-    main.cpp
+    main2.cpp
 )
 
 target_include_directories(first_test_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
