@@ -80,17 +80,19 @@ template void fillZeroGPU(Tensor<int>& input);
 //     int x = blockIdx.x * blockDim.x + threadIdx.x;
 //     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-//     if (y < height_input && x < width_output) {
+//     if (y < height_input && x < width_output) 
+//     {
 //         T sum = 0;
-//         for (int k = 0; k < width_input; k++)
+//         for (int k = 0; k < width_input; k++) 
 //         {
 //             T a_val = input[k + y * inputStride / sizeof(T)];
 //             T b_val = other[x + k * otherStride / sizeof(T)];
 //             sum += a_val * b_val;
 //         }
 //         result[x + y * resultStride / sizeof(T)] = sum;
-//     }
+//      }
 // }
+
 
 
 #define TILE_SIZE 16
@@ -148,7 +150,7 @@ __global__ void dotGPUKernel(T* input, T* other, T* result,
 template <class T>
 Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other) {
     dim3 blockSize(16, 16);
-    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
+    dim3 gridSize((other.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
 
     Tensor<T> result(other.width, input.height, true);
