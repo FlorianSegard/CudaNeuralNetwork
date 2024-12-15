@@ -1,4 +1,5 @@
 #include "../Layers/Layers.hpp"
+#include "../Tensor/Tensor.hpp"
 
 class Optimizer {
 public:
@@ -11,11 +12,15 @@ public:
 class SGD : public Optimizer {
 private:
     float learningRate;
+    float clipValue;
 
 public:
-    explicit SGD(float lr) : learningRate(lr) {}
+    explicit SGD(float lr, float clip = 1.0f) : learningRate(lr), clipValue(clip) {}
 
     void update(LayerParams& params) override {
+        params.dWeights.clipGradients(clipValue);
+        params.dBiases.clipGradients(clipValue);
+
         params.weights = params.weights - params.dWeights * learningRate;
         params.biases = params.biases - params.dBiases * learningRate;
     }
