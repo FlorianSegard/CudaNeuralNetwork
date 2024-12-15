@@ -30,19 +30,19 @@ struct Linear : public Layer {
         if (!require_grad) return Tensor<float>();
 
         Tensor<float> dInput = dOutput.dot(params.weights.transpose());
-        Logger::backprop("| -> dInput");
+        Logger::backprop("├── dInput");
         Logger::debugTensor(LogLevel::BACKPROP, dInput);
 
         // dWeights = input.T @ dOutput
-
+        auto batchSize = static_cast<float>(this->lastInput.height);
         Tensor<float> inputT = this->lastInput.transpose();
-        params.dWeights = inputT.dot(dOutput);
+        params.dWeights = inputT.dot(dOutput) * (1.0f / batchSize);
 
-        Logger::backprop("| -> params.dWeights");
+        Logger::backprop("├── params.dWeights");
         Logger::debugTensor(LogLevel::BACKPROP, params.dWeights);
 
-        params.dBiases = dOutput.sumColumns();
-        Logger::backprop("| -> params.dBiases");
+        params.dBiases = dOutput.sumColumns() * (1.0f / batchSize);
+        Logger::backprop("├── params.dBiases");
         Logger::debugTensor(LogLevel::BACKPROP, params.dBiases);
 
         // Calculate input gradients for backprop
