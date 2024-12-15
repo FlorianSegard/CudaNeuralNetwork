@@ -411,3 +411,52 @@ void initWeightsGPU(Tensor<T>& weights, float limit) {
 
 template void initWeightsGPU(Tensor<float>& weights, float limit);
 template void initWeightsGPU(Tensor<double>& weights, float limit);
+
+
+// ----------------------------------------------------------- Sum column ----------------------------------------------------------- \\
+
+
+template <class T>
+__global__ void sumColumnsKernel(const T* input, T* output, int width, int height, size_t stride) {
+    int col = blockIdx.x * blockDim.x + threadIdx.x; // Column index
+    if (col >= width) return; // Ensure we don’t go out of bounds
+
+    T sum = 0;
+    for (int row = 0; row < height; ++row) {
+        sum += input[row * stride / sizeof(T) + col];
+    }
+    output[col] = sum;
+}
+
+
+template <class T>
+Tensor<T> sumColumnsGPU(Tensor<T>& input) {
+    // Create a result tensor for the output (1 row, `width` columns)
+    Tensor<T> result(input.width, 1, true);
+
+    // Configure CUDA kernel
+    dim3 blockSize(256);
+    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x);
+
+    // Launch the kernel
+    sumColumnsKernel<T><<<gridSize, blockSize>>>(
+        input.buffer, result.buffer, input.width, input.height, input.stride
+    );
+    cudaDeviceSynchronize();
+
+    // Check for CUDA errors
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+
+    return result; // Return the result tensor
+}
+
+// Explicit template instantiations
+template Tensor<float> sumColumnsGPU(Tensor<float>& input);
+template Tensor<double> sumColumnsGPU(Tensor<double>& input);
+template Tensor<int> sumColumnsGPU(Tensor<int>& input);
+
+
+

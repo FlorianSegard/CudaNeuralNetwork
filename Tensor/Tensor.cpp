@@ -183,3 +183,26 @@ void initializeWeightsCPU(Tensor<T>& weights, float limit) {
 
 template void initializeWeightsCPU(Tensor<float>& weights, float limit);
 template void initializeWeightsCPU(Tensor<double>& weights, float limit);
+
+
+// ----------------------------------------------------------- Sum column ----------------------------------------------------------- \\
+
+
+template <class T>
+Tensor<T> sumColumnsCPU(Tensor<T>& input){
+    Tensor<T> result(input.width, 1, false);
+
+    for (int col = 0; col < input.width; ++col) {
+        T sum = 0;
+        for (int row = 0; row < input.height; ++row) {
+            sum += input[row][col];
+        }
+        result[0][col] = sum;
+    }
+
+    return result;
+}
+
+template Tensor<float> sumColumnsCPU(Tensor<float>& input);
+template Tensor<double> sumColumnsCPU(Tensor<double>& input);
+template Tensor<int> sumColumnsCPU(Tensor<int>& input);

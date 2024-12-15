@@ -55,20 +55,22 @@ struct Linear : public Layer {
 
     Tensor<float> backward(Tensor<float>& dOutput) override {
         // dInput = dOutput @ weights
-        Logger::backprop(">>> Linear");
+        // Logger::backprop(">>> Linear");
         if (!require_grad) return Tensor<float>();
 
         Tensor<float> dInput = dOutput.dot(params.weights.transpose());
-        Logger::backprop("| -> dInput");
-        Logger::debugTensor(LogLevel::BACKPROP, dInput);
+        // Logger::backprop("| -> dInput");
+        // Logger::debugTensor(LogLevel::BACKPROP, dInput);
 
         // dWeights = input.T @ dOutput
+
         Tensor<float> inputT = this->lastInput.transpose();
         params.dWeights = inputT.dot(dOutput);
 
-        Logger::backprop("| -> params.dWeights");
-        Logger::debugTensor(LogLevel::BACKPROP, params.dWeights);
+        // Logger::backprop("| -> params.dWeights");
+        // Logger::debugTensor(LogLevel::BACKPROP, params.dWeights);
 
+        params.dBiases = dOutput.sumColumns();
         // Calculate input gradients for backprop
         return dInput;
     }
