@@ -1,4 +1,5 @@
 #pragma once
+#include <cfloat>
 #include <iostream>
 
 enum class LogLevel {
@@ -47,9 +48,26 @@ public:
     }
 
     template<typename T>
-    static void debugTensor(LogLevel log_level, T& tensor) {
+    static void debugTensor(LogLevel log_level, T& tensor, bool print_value = false) {
         if (level == log_level) {
-            tensor.switchDevice(false).print();
+            auto cpu = tensor.switchDevice(false);
+            float maxVal = -FLT_MAX;
+            float minVal = FLT_MAX;
+            float sumAbs = 0.0f;
+
+            for (int i = 0; i < cpu.height; i++) {
+                for (int j = 0; j < cpu.width; j++) {
+                    float val = cpu[i][j];
+                    maxVal = std::max(maxVal, val);
+                    minVal = std::min(minVal, val);
+                    sumAbs += std::abs(val);
+                }
+            }
+            if (print_value)
+                cpu.print();
+            std::cout  << "| -> stats - min: " << minVal
+                      << " max: " << maxVal
+                      << " mean abs: " << sumAbs/(cpu.height*cpu.width) << std::endl;
         }
     }
 };
