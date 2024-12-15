@@ -111,6 +111,17 @@ void initWeightsGPU(Tensor<T>& weights, float limit);
 template <class T>
 void initializeWeightsCPU(Tensor<T>& weights, float limit);
 
+// ----------------------------------------------------------- Sum column ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void sumColumnsKernel(const T* input, T* output, int width, int height, size_t stride);
+
+template <class T>
+Tensor<T> sumColumnsGPU(Tensor<T>& input);
+
+template <class T>
+Tensor<T> sumColumnsCPU(Tensor<T>& input);
+
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
 // View over a 2D buffer
@@ -151,7 +162,7 @@ struct Tensor : TensorView<T> {
     Tensor transpose() const;
     Tensor dot(const Tensor& other);
     Tensor termToTermMult(const Tensor& other);
-
+    Tensor sumColumns();
     void print();
     void fillZero();
     void fillOnes();
@@ -373,5 +384,20 @@ void Tensor<T>::initializeWeights(int fanIn, int fanOut) {
     else
         initializeWeightsCPU(*this, limit);
 }
+
+
+template <class T>
+Tensor<T> Tensor<T>::sumColumns() {
+    if (this->width == 0 || this->height == 0) {
+        throw std::invalid_argument("Tensor dimensions must be non-zero.");
+    }
+
+    if (this->device) {
+        return sumColumnsGPU(*this);
+    } else {
+        return sumColumnsCPU(*this);
+    }
+}
+
 
 //TODO implement random filling test later maybe: glorot filling
