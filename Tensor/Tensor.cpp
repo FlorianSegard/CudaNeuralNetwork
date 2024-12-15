@@ -1,5 +1,8 @@
 #include "Tensor.hpp"
 
+#include <cmath>
+#include <bits/random.h>
+
 // ----------------------------------------------------------- TRANSPOSE ----------------------------------------------------------- \\
 
 template <class T>
@@ -162,3 +165,21 @@ void clipGradientsCPU(Tensor<T>& gradients, const T clipValue) {
 template void clipGradientsCPU(Tensor<float>& input, float clipValue);
 template void clipGradientsCPU(Tensor<double>& input, double clipValue);
 template void clipGradientsCPU(Tensor<int>& input, int clipValue);
+
+// ----------------------------------------------------------- Xavier Init weight ----------------------------------------------------------- \\
+
+template <class T>
+void initializeWeightsCPU(Tensor<T>& weights, float limit) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-limit, limit);
+
+    for (int i = 0; i < weights.height; i++) {
+        for (int j = 0; j < weights.width; j++) {
+            weights[i][j] = dis(gen);
+        }
+    }
+}
+
+template void initializeWeightsCPU(Tensor<float>& weights, float limit);
+template void initializeWeightsCPU(Tensor<double>& weights, float limit);

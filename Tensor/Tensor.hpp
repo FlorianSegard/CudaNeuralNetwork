@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cuda_runtime.h>
 #include <stdexcept>
 #include <cstring>
@@ -99,6 +100,17 @@ void clipGradientsGPU(Tensor<T>& gradients, T clipValue);
 template <class T>
 void clipGradientsCPU(Tensor<T>& gradients, T clipValue);
 
+// ----------------------------------------------------------- Xavier Init weight ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void initWeightsKernel(T* weights, int width, int height, size_t stride, float limit, unsigned int seed);
+
+template <class T>
+void initWeightsGPU(Tensor<T>& weights, float limit);
+
+template <class T>
+void initializeWeightsCPU(Tensor<T>& weights, float limit);
+
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
 // View over a 2D buffer
@@ -144,6 +156,7 @@ struct Tensor : TensorView<T> {
     void fillZero();
     void fillOnes();
     void clipGradients(T clipValue);
+    void initializeWeights(int fanIn, int fanOut);
 };
 
 template <class T>
@@ -349,6 +362,16 @@ void Tensor<T>::clipGradients(const T clipValue) {
         clipGradientsGPU(*this, clipValue);
     else
         clipGradientsCPU(*this, clipValue);
+}
+
+template <class T>
+void Tensor<T>::initializeWeights(int fanIn, int fanOut) {
+    float limit = std::sqrt(2.0f / (float)(fanIn + fanOut));
+
+    if (this->device)
+        initWeightsGPU(*this, limit);
+    else
+        initializeWeightsCPU(*this, limit);
 }
 
 //TODO implement random filling test later maybe: glorot filling

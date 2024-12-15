@@ -1,4 +1,5 @@
 #include "Tensor.hpp"
+#include <curand_kernel.h>
 
 // ----------------------------------------------------------- TRANSPOSE ----------------------------------------------------------- \\
 
@@ -360,3 +361,53 @@ void clipGradientsGPU(Tensor<T>& gradients, const T clipValue) {
 template void clipGradientsGPU(Tensor<float>& gradients, float clipValue);
 template void clipGradientsGPU(Tensor<double>& gradients, double clipValue);
 template void clipGradientsGPU(Tensor<int>& gradients, int clipValue);
+
+
+// ----------------------------------------------------------- Xavier Init weight Kernel ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void initWeightsKernel(T* weights, int width, int height, size_t stride, float limit, unsigned int seed) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        // Initialize CUDA random number generator
+        curandState state;
+        curand_init(seed + y * width + x, 0, 0, &state);
+
+        // generate random number between -limit and limit
+        float random = (2.0f * curand_uniform(&state) - 1.0f) * limit;
+
+        size_t index = y * (stride / sizeof(T)) + x;
+        weights[index] = random;
+    }
+}
+
+template <class T>
+void initWeightsGPU(Tensor<T>& weights, float limit) {
+    dim3 blockSize(32, 32);
+    dim3 gridSize(
+        (weights.width + blockSize.x - 1) / blockSize.x,
+        (weights.height + blockSize.y - 1) / blockSize.y
+    );
+
+    // using time as the seed
+    auto seed = static_cast<unsigned int>(time(nullptr));
+
+    initWeightsKernel<<<gridSize, blockSize>>>(
+        weights.buffer,
+        weights.width,
+        weights.height,
+        weights.stride,
+        limit,
+        seed
+    );
+
+    cudaError_t err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+}
+
+template void initWeightsGPU(Tensor<float>& weights, float limit);
+template void initWeightsGPU(Tensor<double>& weights, float limit);
