@@ -6,15 +6,16 @@
 #include "Tensor/Tensor.hpp"
 #include "Loss/Loss.hpp"
 #include "Loader/ModelLoader.hpp"
+#include "Logger/Logger.hpp"
 #include "MNIST/MNISTLoader.hpp"
 
 const int BATCH_SIZE = 1;
 const int INPUT_FEATURES = 784;  // 28x28 pixels
 const int HIDDEN_FEATURES = 20;
 const int OUTPUT_FEATURES = 10;  // 10 digits
-const int TRAIN_SAMPLES = 10;
+const int TRAIN_SAMPLES = 1000;
 const int TEST_SAMPLES = 5;
-const int EPOCHS = 10;
+const int EPOCHS = 30;
 
 void check_weights(Model* model) {
     std::cout << "------------- WEIGHTS MODEL LAYER 0 ------------- " << std::endl;
@@ -89,23 +90,34 @@ float computeAccuracy(const Tensor<float>& predictions, const std::vector<int>& 
     return static_cast<float>(correct) / batchSize;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-i" || arg == "--infer") {
+            Logger::setLevel(LogLevel::INFER);
+        } else if (arg == "-b" || arg == "--back") {
+            Logger::setLevel(LogLevel::BACKPROP);
+        } else if (arg == "-d" || arg == "--debug") {
+            Logger::setLevel(LogLevel::DEBUG);
+        } else if (arg == "-a" || arg == "--all") {
+            Logger::setLevel(LogLevel::ALL);
+        }
+    }
+
     // Create model
     bool onGPU = true;
     Model model;
-    model.setOptimizer(SGD(0.001f));
+    model.setOptimizer(SGD(0.001f, 10.0f));
 
     // Add layers with ReLU activation
-    model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
-    model.addLayer(std::make_unique<ReLU>());
-    model.addLayer(std::make_unique<Linear>(HIDDEN_FEATURES, OUTPUT_FEATURES, onGPU));
+    model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, OUTPUT_FEATURES, onGPU));
     model.addLayer(std::make_unique<Softmax>());
 
     // Load training data
     std::string train_images_path = "/home/alex/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";
     std::string train_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/train-labels-idx1-ubyte/train-labels-idx1-ubyte";
 
-    auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, false, TRAIN_SAMPLES);
+    auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, true, TRAIN_SAMPLES);
 
     // Training loop
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
@@ -124,16 +136,12 @@ int main() {
             Tensor<float> inputGPU = batchImages.switchDevice(onGPU);
             Tensor<float> targetGPU = batchLabels.switchDevice(onGPU);
 
-            std::cout << "INPUT ";
-            inputGPU.switchDevice(false).print();
-            std::cout << "TARGET ";
-            targetGPU.switchDevice(false).print();
 
             // Forward pass
             Tensor<float> predictions = model.forward(std::move(inputGPU));
 
             // Compute loss and gradient
-            auto [loss, dOutput] = computeMSELoss(predictions, targetGPU);
+            auto [loss, dOutput] = computeCrossEntropyLoss(predictions, targetGPU);
             total_loss += loss;
 
             // Compute accuracy
@@ -161,7 +169,7 @@ int main() {
     std::string test_images_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
     std::string test_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte";
 
-    auto [test_images, test_labels] = MNISTLoader::loadMNIST(test_images_path, test_labels_path, false, TEST_SAMPLES);
+    auto [test_images, test_labels] = MNISTLoader::loadMNIST(test_images_path, test_labels_path, true, TEST_SAMPLES);
 
     float test_accuracy = 0.0f;
     float test_loss = 0.0f;

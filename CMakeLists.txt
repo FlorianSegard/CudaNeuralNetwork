@@ -43,6 +43,8 @@ add_executable(first_test_model
     Layers/Softmax/Softmax.cpp
     Layers/Softmax/Softmax.cu
     Layers/Softmax/Softmax.hpp
+    Logger/Logger.cpp
+    Logger/Logger.hpp
     main2.cpp
 )
 
