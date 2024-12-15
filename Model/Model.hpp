@@ -9,6 +9,15 @@
 
 #include "Logger/Logger.hpp"
 
+float computeGradientNorm(const Tensor<float>& gradients) {
+    float norm = 0.0f;
+    for (int i = 0; i < gradients.height; i++) {
+        for (int j = 0; j < gradients.width; j++) {
+            norm += gradients[i][j] * gradients[i][j];
+        }
+    }
+    return std::sqrt(norm);
+}
 
 struct Model
 {
@@ -46,20 +55,9 @@ struct Model
 
         Tensor<float> dInput = dOutput.clone();
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-            if (auto* linear = dynamic_cast<Linear*>(it->get())) {
-                // Log gradient norms before backward
-                Tensor<float> dInput_cpu = dInput.switchDevice(false);
-                float gradNorm = 0.0f;
-                for (int i = 0; i < dInput_cpu.height; i++) {
-                    for (int j = 0; j < dInput_cpu.width; j++) {
-                        gradNorm += dInput_cpu[i][j] * dInput_cpu[i][j];
-                    }
-                }
-                if (test && std::sqrt(gradNorm) > 100.0f) {
-                    std::cout << "Gradient norm is exploding: normal value=0.122307, current value=" + std::to_string(std::sqrt(gradNorm)) << std::endl;
-                    test = false;
-                }
-            }
+            Logger::backprop("==== IN of backward Layer ====");
+            Logger::debugTensor(LogLevel::BACKPROP, dInput);
+
             dInput = (*it)->backward(dInput);
         }
     }
@@ -67,6 +65,15 @@ struct Model
     void step() {
         for (auto& layer : layers) {
             if (auto* linear = dynamic_cast<Linear*>(layer.get())) {
+                if (test) {
+                    Tensor<float> linear_param = linear->params.dWeights.switchDevice(false);
+                    float norm = computeGradientNorm(linear_param);
+                    if (norm > 100.0f) {
+                        std::cout << "Gradient norm is exploding: " << norm << std::endl;
+                        test = false;
+                    }
+                }
+
                 optimizer.update(linear->params);
             }
         }
