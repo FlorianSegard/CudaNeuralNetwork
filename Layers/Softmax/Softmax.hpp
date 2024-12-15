@@ -32,9 +32,13 @@ struct Softmax : public Layer {
         Logger::backprop(">>> Softmax");
 
         if (dOutput.device == true) {
-            return softmaxBackwardGPU(this->lastInput, dOutput);
+            Tensor<float> t_float = softmaxBackwardGPU(this->lastInput, dOutput);
+            Logger::debugTensor(LogLevel::DEBUG, t_float);
+            return t_float;
         } else {
-            return softmaxBackwardCPU(this->lastInput, dOutput);
+            Tensor<float> t_float = softmaxBackwardCPU(this->lastInput, dOutput);
+            Logger::debugTensor(LogLevel::DEBUG, t_float);
+            return t_float;
         }
     }
 };
