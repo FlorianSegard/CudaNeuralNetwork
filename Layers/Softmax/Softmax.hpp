@@ -1,6 +1,7 @@
 #pragma once
 #include "../Layers.hpp"
 #include "../../Tensor/Tensor.hpp"
+#include "Logger/Logger.hpp"
 
 Tensor<float> softmaxGPU(Tensor<float>& input);
 __global__ void softmaxForwardKernel(float* input, float* output, int width, int height, size_t inStride, size_t outStride);
@@ -17,6 +18,7 @@ struct Softmax : public Layer {
 
     // Forward pass for Softmax
     Tensor<float> computeForward(Tensor<float>& input) override {
+        Logger::infer(">>> Linear");
         if (input.device == true) {
             return softmaxGPU(input);
         } else {
@@ -27,6 +29,7 @@ struct Softmax : public Layer {
     // Backward pass for Softmax
     Tensor<float> backward(Tensor<float>& dOutput) override {
         if (!require_grad) return Tensor<float>();
+        Logger::backprop(">>> Softmax");
 
         if (dOutput.device == true) {
             return softmaxBackwardGPU(this->lastInput, dOutput);

@@ -1,14 +1,13 @@
 #pragma once
 
-#include <cstring>
-#include <string_view>
 #include <memory>
 #include "../Layers/Layers.hpp"
 #include "../Optimizer/Optimizer.hpp"
 #include "../Layers/Linear/Linear.hpp"
-#include <optional>
 #include <utility>
 #include <vector>
+
+#include "Logger/Logger.hpp"
 
 
 struct Model
@@ -33,20 +32,22 @@ struct Model
     }
 
     Tensor<float> forward(Tensor<float> input) {
-        // std::cout << "4" << std::endl;
         for (auto& layer : layers) {
             input = layer->forward(input);
-            std::cout << "==== OUT LAYER ==== " << std::endl;
-            input.switchDevice(false).print();
-            // std::cout << "7" << std::endl;
 
+            Logger::infer("==== OUT of forward Layer ====");
+            Logger::debugTensor(LogLevel::INFER, input);
         }
         return input;
     }
 
     void backward(Tensor<float>& dOutput) {
         Tensor<float> dInput = dOutput.clone();
+
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+            Logger::backprop("==== IN of backward Layer  ====");
+            Logger::debugTensor(LogLevel::BACKPROP, dInput);
+
             dInput = (*it)->backward(dInput);
         }
     }
