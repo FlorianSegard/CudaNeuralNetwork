@@ -14,6 +14,7 @@ struct Model
 {
     std::vector<std::unique_ptr<Layer>> layers;
     SGD optimizer;
+    bool test = true;
 
     Model() : optimizer(0.001f) {}
 
@@ -42,17 +43,22 @@ struct Model
     }
 
     void backward(Tensor<float>& dOutput) {
+
         Tensor<float> dInput = dOutput.clone();
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
             if (auto* linear = dynamic_cast<Linear*>(it->get())) {
                 // Log gradient norms before backward
+                Tensor<float> dInput_cpu = dInput.switchDevice(false);
                 float gradNorm = 0.0f;
-                for (int i = 0; i < dInput.height; i++) {
-                    for (int j = 0; j < dInput.width; j++) {
-                        gradNorm += dInput[i][j] * dInput[i][j];
+                for (int i = 0; i < dInput_cpu.height; i++) {
+                    for (int j = 0; j < dInput_cpu.width; j++) {
+                        gradNorm += dInput_cpu[i][j] * dInput_cpu[i][j];
                     }
                 }
-                Logger::debug("Gradient norm: " + std::to_string(std::sqrt(gradNorm)));
+                if (test && std::sqrt(gradNorm) > 100.0f) {
+                    std::cout << "Gradient norm is exploding: normal value=0.122307, current value=" + std::to_string(std::sqrt(gradNorm)) << std::endl;
+                    test = false;
+                }
             }
             dInput = (*it)->backward(dInput);
         }
