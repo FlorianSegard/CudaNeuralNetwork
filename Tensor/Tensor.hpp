@@ -88,6 +88,16 @@ Tensor<T> scalarMultiplyGPU(const Tensor<T>& input, T scalar);
 template <class T>
 Tensor<T> scalarMultiplyCPU(const Tensor<T>& input, T scalar);
 
+// ----------------------------------------------------------- Clip Gradients ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void clipGradientsKernel(T* gradients, int width, int height, size_t stride, T clipValue);
+
+template <class T>
+void clipGradientsGPU(Tensor<float>& gradients, float clipValue);
+
+template <class T>
+void clipGradientsCPU(Tensor<float>& gradients, float clipValue);
 
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
@@ -135,6 +145,8 @@ struct Tensor : TensorView<T> {
 
     Tensor dot(const Tensor& other);
     Tensor termtotermMult(const Tensor& other);
+
+    void clipGradients();
 };
 
 template <class T>
@@ -300,6 +312,7 @@ template <class T>
 Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
     if (this->width != other.height)
         throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+
     if (this->device)
         return dotGPU(*this, other);
     else
@@ -310,6 +323,7 @@ template <class T>
 Tensor<T> Tensor<T>::termtotermMult(const Tensor<T>& other) {
     if (this->width != other.width || this->height != other.height)
         throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+
     if (this->device)
         return termtotermMultGPU(*this, other);
     else
@@ -332,6 +346,12 @@ void Tensor<T>::print() {
     }
 }
 
-
+template <class T>
+void Tensor<T>::clipGradients() {
+    if (this->device)
+        clipGradientsGPU(*this);
+    else
+        clipGradientsCPU(*this);
+}
 
 //TODO implement random filling test later maybe: glorot filling

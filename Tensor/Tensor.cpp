@@ -147,3 +147,15 @@ void fillOnesCPU(Tensor<T>& input) {
 template void fillOnesCPU(Tensor<float>& input);
 template void fillOnesCPU(Tensor<double>& input);
 template void fillOnesCPU(Tensor<int>& input);
+
+// ----------------------------------------------------------- Clip Gradients ----------------------------------------------------------- \\
+
+template <class T>
+void clipGradientsCPU(Tensor<float>& gradients, const float clipValue) {
+    for (int i = 0; i < gradients.height; i++) {
+        for (int j = 0; j < gradients.width; j++) {
+            gradients[i][j] = std::max(std::min(gradients[i][j], clipValue), -clipValue);
+        }
+    }
+}
+

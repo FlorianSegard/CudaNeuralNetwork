@@ -302,7 +302,6 @@ __global__ void fillOnesKernel(T* input, int width, int height, size_t stride) {
 
 template <class T>
 void fillOnesGPU(Tensor<T>& input) {
-
     dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
@@ -322,3 +321,38 @@ void fillOnesGPU(Tensor<T>& input) {
 template void fillOnesGPU(Tensor<float>& input);
 template void fillOnesGPU(Tensor<double>& input);
 template void fillOnesGPU(Tensor<int>& input);
+
+// ----------------------------------------------------------- Clip Gradients ----------------------------------------------------------- \\
+
+template <typename T>
+__global__ void clipGradientsKernel(T* gradients, int width, int height, size_t stride, T clipValue) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        size_t index = y * (stride / sizeof(T)) + x;
+        gradients[index] = max(min(gradients[index], clipValue), -clipValue);
+    }
+}
+
+template <class T>
+void clipGradientsGPU(Tensor<float>& gradients, const float clipValue) {
+    dim3 blockSize(32, 32);
+    dim3 gridSize(
+        (gradients.width + blockSize.x - 1) / blockSize.x,
+        (gradients.height + blockSize.y - 1) / blockSize.y
+    );
+
+    clipGradientsKernel<<<gridSize, blockSize>>>(
+        gradients.buffer,
+        gradients.width,
+        gradients.height,
+        gradients.stride,
+        clipValue
+    );
+
+    cudaError_t err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+}
