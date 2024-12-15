@@ -94,10 +94,10 @@ template <class T>
 __global__ void clipGradientsKernel(T* gradients, int width, int height, size_t stride, T clipValue);
 
 template <class T>
-void clipGradientsGPU(Tensor<float>& gradients, float clipValue);
+void clipGradientsGPU(Tensor<T>& gradients, T clipValue);
 
 template <class T>
-void clipGradientsCPU(Tensor<float>& gradients, float clipValue);
+void clipGradientsCPU(Tensor<T>& gradients, T clipValue);
 
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
@@ -126,7 +126,6 @@ struct Tensor : TensorView<T> {
     Tensor(const Tensor& other) = delete;
     Tensor& operator=(const Tensor& other) = delete;
 
-    
 
     T* operator[](int y);
     const T* operator[](int y) const;
@@ -138,15 +137,13 @@ struct Tensor : TensorView<T> {
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
-    void print();
+    Tensor dot(const Tensor& other);
+    Tensor termToTermMult(const Tensor& other);
 
+    void print();
     void fillZero();
     void fillOnes();
-
-    Tensor dot(const Tensor& other);
-    Tensor termtotermMult(const Tensor& other);
-
-    void clipGradients();
+    void clipGradients(T clipValue);
 };
 
 template <class T>
@@ -320,7 +317,7 @@ Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
 }
 
 template <class T>
-Tensor<T> Tensor<T>::termtotermMult(const Tensor<T>& other) {
+Tensor<T> Tensor<T>::termToTermMult(const Tensor<T>& other) {
     if (this->width != other.width || this->height != other.height)
         throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
 
@@ -347,11 +344,11 @@ void Tensor<T>::print() {
 }
 
 template <class T>
-void Tensor<T>::clipGradients() {
+void Tensor<T>::clipGradients(const T clipValue) {
     if (this->device)
-        clipGradientsGPU(*this);
+        clipGradientsGPU(*this, clipValue);
     else
-        clipGradientsCPU(*this);
+        clipGradientsCPU(*this, clipValue);
 }
 
 //TODO implement random filling test later maybe: glorot filling

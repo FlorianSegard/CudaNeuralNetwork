@@ -336,7 +336,7 @@ __global__ void clipGradientsKernel(T* gradients, int width, int height, size_t 
 }
 
 template <class T>
-void clipGradientsGPU(Tensor<float>& gradients, const float clipValue) {
+void clipGradientsGPU(Tensor<T>& gradients, const T clipValue) {
     dim3 blockSize(32, 32);
     dim3 gridSize(
         (gradients.width + blockSize.x - 1) / blockSize.x,
@@ -356,3 +356,7 @@ void clipGradientsGPU(Tensor<float>& gradients, const float clipValue) {
         throw std::runtime_error(cudaGetErrorString(err));
     }
 }
+
+template void clipGradientsGPU(Tensor<float>& gradients, float clipValue);
+template void clipGradientsGPU(Tensor<double>& gradients, double clipValue);
+template void clipGradientsGPU(Tensor<int>& gradients, int clipValue);
