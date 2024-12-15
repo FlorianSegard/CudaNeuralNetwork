@@ -6,6 +6,8 @@
 #include <cstring>
 #include <memory>
 #include <iostream>
+#include <random>
+
 
 template <class T>
 struct Tensor;
