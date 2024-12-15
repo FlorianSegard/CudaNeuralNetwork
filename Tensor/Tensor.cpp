@@ -71,7 +71,7 @@ Tensor<T> termtotermMultCPU(const Tensor<T>& input, const Tensor<T>& other) {
             int otherIndex = x + (other.stride / sizeof(T)) * y;
             int resultIndex = x + (result.stride / sizeof(T)) * y;
 
-            result.buffer[resultIndex] = input.buffer[inputIndex] + other.buffer[otherIndex];
+            result.buffer[resultIndex] = input.buffer[inputIndex] * other.buffer[otherIndex];
         }
     }
 

@@ -43,7 +43,7 @@ __global__ void fillZeroKernel(T* input, int width, int height, size_t inStride)
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        input[x + inStride / sizeof(T) * y] = 0;
+        input[y * (inStride / sizeof(T)) + x] = 0;
     }
 }
 
@@ -95,7 +95,7 @@ template void fillZeroGPU(Tensor<int>& input);
 
 
 
-#define TILE_SIZE 16
+#define TILE_SIZE 32
 
 template <class T>
 __global__ void dotGPUKernel(T* input, T* other, T* result,
@@ -149,7 +149,7 @@ __global__ void dotGPUKernel(T* input, T* other, T* result,
 
 template <class T>
 Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other) {
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((other.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
 
@@ -196,7 +196,7 @@ template <class T>
 Tensor<T> termtotermMultGPU(const Tensor<T>& input, const Tensor<T>& other) {
     Tensor<T> result(input.width, input.height, true);
 
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x, 
                   (input.height + blockSize.y - 1) / blockSize.y);
 
@@ -262,8 +262,9 @@ __global__ void scalarMultiplyKernel(const T* input, T* output, T scalar, int wi
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        int result = y * (inStride / sizeof(T)) + x;
-        output[result] = input[result] * scalar;
+        int inputIndex = y * (inStride / sizeof(T)) + x;
+        int outputIndex = y * (outStride / sizeof(T)) + x;
+        output[outputIndex] = input[inputIndex] * scalar;
     }
 }
 
@@ -271,7 +272,7 @@ template <class T>
 Tensor<T> scalarMultiplyGPU(const Tensor<T>& input, const T scalar) {
     Tensor<T> result(input.width, input.height, true);
 
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
 
@@ -295,8 +296,7 @@ __global__ void fillOnesKernel(T* input, int width, int height, size_t stride) {
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        int result = y * (stride / sizeof(T)) + x;
-        input[result] = T(1);
+        input[y * (stride / sizeof(T)) + x] = T(1);
     }
 }
 
