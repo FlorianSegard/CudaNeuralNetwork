@@ -16,7 +16,7 @@ inline std::pair<float, Tensor<float>> computeMSELoss(Tensor<float>& predictions
     if (predictions.width != targets.width || predictions.height != targets.height) {
         throw std::invalid_argument("Dimensions do not match for loss calculation.");
     }
-    Logger::debug(">>> MSELoss");
+    Logger::loss(">>> MSELoss");
 
     Tensor<float> diff = predictions - targets;
 
@@ -35,8 +35,8 @@ inline std::pair<float, Tensor<float>> computeMSELoss(Tensor<float>& predictions
 
     const float scale = 2.0f / N;
     Tensor<float> grad = diff * scale;
-    Logger::debug("----- Final Grad -----");
-    Logger::debugTensor(LogLevel::DEBUG, diff);
+    Logger::loss("----- Final Grad -----");
+    Logger::debugTensor(LogLevel::LOSS, diff);
 
     return {loss, std::move(grad)};
 }
@@ -55,7 +55,7 @@ inline std::pair<float, Tensor<float>> computeCrossEntropyLoss(Tensor<float>& pr
     if (predictions.width != targets.width || predictions.height != targets.height) {
         throw std::invalid_argument("Dimensions do not match for loss calculation.");
     }
-    Logger::debug(">>> CrossEntropyLoss");
+    Logger::loss(">>> CrossEntropyLoss");
 
     Tensor<float> grad(predictions.width, predictions.height, predictions.device);
     float loss;
@@ -66,8 +66,8 @@ inline std::pair<float, Tensor<float>> computeCrossEntropyLoss(Tensor<float>& pr
         loss = computeCrossEntropyLossCPU(predictions, targets, grad);
     }
 
-    Logger::debug("----- Final Grad -----");
-    Logger::debugTensor(LogLevel::DEBUG, grad);
+    Logger::loss("----- Final Grad -----");
+    Logger::debugTensor(LogLevel::LOSS, grad);
 
     return {loss, std::move(grad)};
 }

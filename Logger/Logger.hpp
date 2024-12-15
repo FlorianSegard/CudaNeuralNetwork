@@ -5,8 +5,9 @@ enum class LogLevel {
     NONE = 0,
     INFER = 1,
     BACKPROP = 2,
-    DEBUG = 3,
-    ALL = 4
+    LOSS = 3,
+    DEBUG = 4,
+    ALL = 5
 };
 
 class Logger {
@@ -27,6 +28,13 @@ public:
     template<typename T>
     static void backprop(const T& message) {
         if (level == LogLevel::BACKPROP || level == LogLevel::ALL) {
+            std::cout << message << std::endl;
+        }
+    }
+
+    template<typename T>
+    static void loss(const T& message) {
+        if (level == LogLevel::LOSS || level == LogLevel::ALL) {
             std::cout << message << std::endl;
         }
     }

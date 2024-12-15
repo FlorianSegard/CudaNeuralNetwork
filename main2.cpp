@@ -97,6 +97,8 @@ int main(int argc, char* argv[]) {
             Logger::setLevel(LogLevel::INFER);
         } else if (arg == "-b" || arg == "--back") {
             Logger::setLevel(LogLevel::BACKPROP);
+        } else if (arg == "-l" || arg == "--loss") {
+            Logger::setLevel(LogLevel::LOSS);
         } else if (arg == "-d" || arg == "--debug") {
             Logger::setLevel(LogLevel::DEBUG);
         } else if (arg == "-a" || arg == "--all") {
@@ -105,12 +107,14 @@ int main(int argc, char* argv[]) {
     }
 
     // Create model
-    bool onGPU = true;
+    bool onGPU = false;
     Model model;
-    model.setOptimizer(SGD(0.001f, 10.0f));
+    model.setOptimizer(SGD(0.0001f, 1.0f));
 
     // Add layers with ReLU activation
-    model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, OUTPUT_FEATURES, onGPU));
+    model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
+    model.addLayer(std::make_unique<ReLU>());
+    model.addLayer(std::make_unique<Linear>(HIDDEN_FEATURES, OUTPUT_FEATURES, onGPU));
     model.addLayer(std::make_unique<Softmax>());
 
     // Load training data

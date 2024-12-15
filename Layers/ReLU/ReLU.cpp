@@ -21,11 +21,7 @@ Tensor<float> reluBackwardCPU(Tensor<float>& input, Tensor<float>& dOutput) {
     Tensor<float> dInput = dOutput.clone();
     for (int y = 0; y < input.height; ++y) {
         for (int x = 0; x < input.width; ++x) {
-            dInput[y][x] = 0.0f;
-            if (input[y][x] > 0.0f) 
-            {
-                dInput[y][x] = dOutput[y][x];
-            }
+            dInput[y][x] = input[y][x] > 0 ? dOutput[y][x] : 0;
         }
     }
     return dInput;

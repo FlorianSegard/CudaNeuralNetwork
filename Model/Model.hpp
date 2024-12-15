@@ -43,11 +43,17 @@ struct Model
 
     void backward(Tensor<float>& dOutput) {
         Tensor<float> dInput = dOutput.clone();
-
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-            Logger::backprop("==== IN of backward Layer  ====");
-            Logger::debugTensor(LogLevel::BACKPROP, dInput);
-
+            if (auto* linear = dynamic_cast<Linear*>(it->get())) {
+                // Log gradient norms before backward
+                float gradNorm = 0.0f;
+                for (int i = 0; i < dInput.height; i++) {
+                    for (int j = 0; j < dInput.width; j++) {
+                        gradNorm += dInput[i][j] * dInput[i][j];
+                    }
+                }
+                Logger::debug("Gradient norm: " + std::to_string(std::sqrt(gradNorm)));
+            }
             dInput = (*it)->backward(dInput);
         }
     }
