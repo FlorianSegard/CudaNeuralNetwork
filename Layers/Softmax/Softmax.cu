@@ -32,6 +32,7 @@ __global__ void softmaxForwardKernel(float* input, float* output, int width, int
     // Step 2: Compute exponentials and their sum
     float sum = 0.0f;
     for (int i = tid; i < width; i += blockDim.x) {
+        // printf("%f\n", rowInput[i]);
         rowOutput[i] = expf(rowInput[i] - maxVal); // Subtract maxVal for numerical stability
         sum += rowOutput[i];
     }

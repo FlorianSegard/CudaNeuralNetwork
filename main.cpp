@@ -71,7 +71,7 @@ int main() {
     // Create a model
     bool onGPU = true;
     Model model;
-    model.setOptimizer(SGD(0.01f));
+    model.setOptimizer(SGD(0.0001f));
 
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, 4, onGPU));
     model.addLayer(std::make_unique<ReLU>());
@@ -124,7 +124,7 @@ int main() {
             // Update step
             model.step();
 
-            check_weights(&model);
+            // check_weights(&model);
 
             model.zeroGrad();
 

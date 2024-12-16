@@ -131,16 +131,20 @@ void testTensorFillZeroAndSwitchDevice() {
 
 
 void testTensorDOT() {
-    Tensor<int> A(120, 20, false);
-    Tensor<int> B(15, 120, false);
+    Tensor<int> A(3, 40, false);
+    Tensor<int> B(40, 3, false);
 
     std::cout << "Matrix A: " << A.height << " x " << A.width << std::endl;
     std::cout << "Matrix B: " << B.height << " x " << B.width << std::endl;
 
-
+    // B = B.transpose();
+    // A = A.transpose();
     fillTensor(A);
     fillTensor(B);
 
+
+    A.print();
+    B.print();
     // printTensor(A);
     // printTensor(B);
 
@@ -153,7 +157,7 @@ void testTensorDOT() {
     std::cout << "Time elapsed: " << duration << " ms" << std::endl;
 
     printTensor(C);
-
+    // B = B.transpose();
 
     Tensor<int> Agpu = A.switchDevice(true);
     Tensor<int> Bgpu = B.switchDevice(true);
@@ -169,7 +173,7 @@ void testTensorDOT() {
     Tensor<int> Cgpucpu = Cgpu.switchDevice(false);
     std::cout << "Matrix C: " << C.height << " x " << C.width << std::endl;
 
-    // printTensor(Cgpucpu);
+    printTensor(Cgpucpu);
 
     std::cout << "Tensor Creation Test Passed!\n";
 }
@@ -296,9 +300,9 @@ int main() {
     testTensorTransposeCPU();
     testTensorTransposeGPU();
     testTensorFillZeroAndSwitchDevice();
-    // testTensorDOT();
+    testTensorDOT();
     // testTensorDOT2();
-    testTensorADD2();
+    // testTensorADD2();
     std::cout << "All tests passed!\n";
     return 0;
 }
