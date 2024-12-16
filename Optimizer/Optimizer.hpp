@@ -1,10 +1,5 @@
 #include "../Layers/Layers.hpp"
-<<<<<<< HEAD
 #include <unordered_map>
-
-=======
-#include "../Tensor/Tensor.hpp"
->>>>>>> 98670720f6cb58523184f1fec1153a6fffb1d198
 
 class Optimizer {
 public:
@@ -23,36 +18,30 @@ private:
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityBiasesMap;
 public:
 
-    float momentum = 0;
+    float momentum = 0.0;
 
     explicit SGD(float lr, float momentum) : learningRate(lr), momentum(momentum) {}
 
     void update(LayerParams& params) override {
 
-        initializeVelocities(params);
 
-        if (momentum == 0)
+        if (momentum == 0.0)
         {
             params.weights = params.weights - params.dWeights * learningRate;
             params.biases = params.biases - params.dBiases * learningRate;
         }
         else
         {
+            initializeVelocities(params);
+
             auto& velocityWeights = velocityWeightsMap[&params];
             auto& velocityBiases = velocityBiasesMap[&params];
-            // std::cout << "3" << std::endl;
-            if (!velocityWeights || !velocityBiases) {
-                throw std::runtime_error("Velocity tensors are not properly initialized.");
-            }
-            *velocityWeights = (*velocityWeights) * momentum + params.dWeights * (1.0f - momentum);
-            // std::cout << "4" << std::endl;
 
+            *velocityWeights = (*velocityWeights) * momentum + params.dWeights * (1.0f - momentum);
             *velocityBiases = (*velocityBiases) * momentum + params.dBiases * (1.0f - momentum);
-            // std::cout << "5" << std::endl;
 
             params.weights = params.weights - (*velocityWeights) * learningRate;
             params.biases = params.biases - (*velocityBiases) * learningRate;
-            // std::cout << "6" << std::endl;
 
         }
     }
