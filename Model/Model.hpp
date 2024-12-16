@@ -16,10 +16,10 @@ struct Model
     std::vector<std::unique_ptr<Layer>> layers;
     SGD optimizer;
 
-    Model() : optimizer(0.001f) {}
+    Model() : optimizer(0.001f, 0) {}
 
     explicit Model(std::vector<std::unique_ptr<Layer>> other_layers)
-            : layers(std::move(other_layers)), optimizer(0.001f) {}
+            : layers(std::move(other_layers)), optimizer(0.001f, 0) {}
 
     Model(std::vector<std::unique_ptr<Layer>>& other_layers, SGD opt)
             : layers(std::move(other_layers)), optimizer(std::move(opt)) {}
