@@ -39,13 +39,13 @@ public:
                 const auto* weight_tensor = initializers[node.input(1)];
                 const auto* bias_tensor = initializers[node.input(2)];
 
-                long input_size = weight_tensor->dims(1);  // Input features
+                long input_size = weight_tensor->dims(1);
                 long output_size = weight_tensor->dims(0);
 
                 std::cout << "Layer: " << node.name() << " -> Input size: " << input_size;
                 std::cout << ", Output size: " << output_size << "\n";
 
-                auto layer = std::make_unique<Linear>(input_size, output_size, false);
+                auto layer = std::make_unique<Linear>(input_size, output_size, useGPU);
 
                 const auto* weight_data = reinterpret_cast<const float*>(weight_tensor->raw_data().data());
                 for (long i = 0; i < input_size; ++i) {
@@ -59,17 +59,12 @@ public:
                 for (long i = 0; i < output_size; ++i) {
                     layer->params.biases[0][i] = bias_data[i];
                 }
-                std::cout << ", Biases: loaded" << "\n" ;
-
-                if (useGPU) {
-                    std::cout << "-----> Switch to GPU" << "\n";
-                    layer->switchDevice(true);
-                }
+                std::cout << ", Biases: loaded" << "\n";
 
                 layers.push_back(std::move(layer));
             }
         }
 
-        return Model(layers);
+        return Model(std::move(layers));
     }
 };

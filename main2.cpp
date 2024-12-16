@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     // Create model
     bool onGPU = true;
     Model model;
-    model.setOptimizer(SGD(0.001f, 1.0f));
+    model.setOptimizer(SGD(0.001f, 0.0f));
 
     // Add layers with ReLU activation
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
