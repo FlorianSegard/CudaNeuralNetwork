@@ -86,7 +86,10 @@ __global__ void crossEntropyLossKernel(const float* predictions, const float* ta
         // Compute loss: -target * log(pred)
         // Add small epsilon to avoid log(0)
         const float epsilon = 1e-7f;
-        float loss = -target * logf(pred + epsilon);
+        float loss = 0.0f;
+        if (target > 0) {
+            loss = -target * logf(pred + epsilon);
+        }
         losses[y * width + x] = loss;
     }
 }

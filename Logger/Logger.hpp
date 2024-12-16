@@ -65,6 +65,8 @@ public:
             }
             if (print_value)
                 cpu.print();
+
+            std::cout << "| Height=" << cpu.height << " && Width=" << cpu.width << std::endl;
             std::cout  << "| -> stats - min: " << minVal
                       << " max: " << maxVal
                       << " mean abs: " << sumAbs/(cpu.height*cpu.width) << std::endl;

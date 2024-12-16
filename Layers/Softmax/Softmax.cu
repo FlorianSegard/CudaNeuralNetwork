@@ -61,34 +61,15 @@ __global__ void softmaxBackwardKernel(float* output, float* dOutput, float* dInp
     if (row >= height) return;
 
     extern __shared__ float sharedData[];
-    float* rowOutput  = output  + (row * outStride / sizeof(float));
+    float* rowOutput = output + (row * outStride / sizeof(float));
     float* rowDOutput = dOutput + (row * dOutStride / sizeof(float));
-    float* rowDInput  = dInput  + (row * dOutStride / sizeof(float));
+    float* rowDInput = dInput + (row * dOutStride / sizeof(float));
 
-    // 1. Compute sumVal = sum over j of (y_j * dY_j)
-    float partialSum = 0.0f;
+    // For softmax + cross entropy, the gradient is simply softmax - target
+    // which was already computed in the loss backward
+    // So we can just copy the gradient
     for (int i = tid; i < width; i += blockDim.x) {
-        partialSum += rowOutput[i] * rowDOutput[i];
-    }
-
-    sharedData[tid] = partialSum;
-    __syncthreads();
-
-    // Parallel reduction to get the sumVal
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            sharedData[tid] += sharedData[tid + s];
-        }
-        __syncthreads();
-    }
-
-    float sumVal = sharedData[0];
-
-    // 2. Compute dZ_i = y_i * (dY_i - sumVal)
-    for (int i = tid; i < width; i += blockDim.x) {
-        float Yi = rowOutput[i];
-        float dYi = rowDOutput[i];
-        rowDInput[i] = Yi * (dYi - sumVal);
+        rowDInput[i] = rowDOutput[i];
     }
 }
 

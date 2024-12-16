@@ -12,6 +12,7 @@
 const int BATCH_SIZE = 1;
 const int INPUT_FEATURES = 784;  // 28x28 pixels
 const int HIDDEN_FEATURES = 20;
+const int HIDDEN_FEATURES_2 = 20;
 const int OUTPUT_FEATURES = 10;  // 10 digits
 const int TRAIN_SAMPLES = 1000;
 const int TEST_SAMPLES = 5;
@@ -107,7 +108,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create model
-    bool onGPU = false;
+    bool onGPU = true;
     Model model;
     model.setOptimizer(SGD(0.0001f, 1.0f));
 
