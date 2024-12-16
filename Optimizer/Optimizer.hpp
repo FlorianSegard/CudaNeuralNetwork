@@ -20,7 +20,7 @@ public:
 
     float momentum = 0.0;
 
-    explicit SGD(float lr, float momentum) : learningRate(lr), momentum(momentum) {}
+    explicit SGD(float lr, float momentum = 0.0) : learningRate(lr), momentum(momentum) {}
 
     void update(LayerParams& params) override {
 
