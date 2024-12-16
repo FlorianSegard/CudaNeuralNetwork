@@ -70,7 +70,7 @@ int main() {
     // Create a model
     bool onGPU = true;
     Model model;
-    model.setOptimizer(SGD(0.0001f));
+    model.setOptimizer(SGD(0.0001f, 0.0));
 
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, 4, onGPU));
     model.addLayer(std::make_unique<ReLU>());
@@ -120,8 +120,10 @@ int main() {
 
             // Backward pass
             model.backward(dOutput);
+            // std::cout << "1" << std::endl;
             // Update step
             model.step();
+            // std::cout << "2" << std::endl;
 
             // check_weights(&model);
 
