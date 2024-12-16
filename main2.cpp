@@ -110,13 +110,13 @@ int main(int argc, char* argv[]) {
     // Create model
     bool onGPU = true;
     Model model;
-    model.setOptimizer(SGD(0.0001f, 1.0f));
+    model.setOptimizer(SGD(0.001f, 1.0f));
 
     // Add layers with ReLU activation
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
     model.addLayer(std::make_unique<ReLU>());
     model.addLayer(std::make_unique<Linear>(HIDDEN_FEATURES, OUTPUT_FEATURES, onGPU));
-    model.addLayer(std::make_unique<Softmax>());
+    model.addLayer(std::make_unique<Softmax>(true));
 
     // Load training data
     std::string train_images_path = "/home/alex/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";

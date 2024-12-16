@@ -55,7 +55,8 @@ __global__ void softmaxForwardKernel(float* input, float* output, int width, int
 }
 
 // Backward Kernel for Softmax
-__global__ void softmaxBackwardKernel(float* output, float* dOutput, float* dInput, int width, int height, size_t outStride, size_t dOutStride) {
+__global__ void softmaxBackwardKernel(float* output, float* dOutput, float* dInput, int width, int height,
+                                     size_t outStride, size_t dOutStride, size_t dInStride) {
     int row = blockIdx.x;
     int tid = threadIdx.x;
 
@@ -64,13 +65,31 @@ __global__ void softmaxBackwardKernel(float* output, float* dOutput, float* dInp
     extern __shared__ float sharedData[];
     float* rowOutput = output + (row * outStride / sizeof(float));
     float* rowDOutput = dOutput + (row * dOutStride / sizeof(float));
-    float* rowDInput = dInput + (row * dOutStride / sizeof(float));
+    float* rowDInput = dInput + (row * dInStride / sizeof(float));
 
-    // For softmax + cross entropy, the gradient is simply softmax - target
-    // which was already computed in the loss backward
-    // So we can just copy the gradient
+    // 1. Compute sum of y_i * dL/dy_i for this row
+    float sum = 0.0f;
     for (int i = tid; i < width; i += blockDim.x) {
-        rowDInput[i] = rowDOutput[i];
+        sum += rowOutput[i] * rowDOutput[i];
+    }
+
+    // Parallel reduction to get the total sum
+    sharedData[tid] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            sharedData[tid] += sharedData[tid + s];
+        }
+        __syncthreads();
+    }
+    sum = sharedData[0];
+
+    // 2. Compute final gradients
+    // dL/dx_i = y_i * (dL/dy_i - sum)
+    for (int i = tid; i < width; i += blockDim.x) {
+        float yi = rowOutput[i];
+        rowDInput[i] = yi * (rowDOutput[i] - sum);
     }
 }
 
@@ -97,7 +116,7 @@ Tensor<float> softmaxBackwardGPU(Tensor<float>& output, Tensor<float>& dOutput) 
     int gridSize = output.height;
 
     softmaxBackwardKernel<<<gridSize, blockSize>>>(
-        output.buffer, dOutput.buffer, dInput.buffer, output.width, output.height, output.stride, dOutput.stride);
+        output.buffer, dOutput.buffer, dInput.buffer, output.width, output.height, output.stride, dOutput.stride, dInput.stride);
 
     cudaDeviceSynchronize();
     return dInput;
