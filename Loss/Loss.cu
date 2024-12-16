@@ -99,7 +99,7 @@ float computeCrossEntropyLossGPU(const Tensor<float>& predictions, const Tensor<
     cudaMalloc(&d_loss, sizeof(float));
     cudaMemset(d_loss, 0, sizeof(float));
 
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 numBlocks((predictions.width + blockSize.x - 1) / blockSize.x,
                    (predictions.height + blockSize.y - 1) / blockSize.y);
 

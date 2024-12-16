@@ -237,7 +237,7 @@ Tensor<T> addGPU(const Tensor<T>& input, const Tensor<T>& other) {
 
     Tensor<T> result(resultWidth, resultHeight, true);
 
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x, 
                   (input.height + blockSize.y - 1) / blockSize.y);
 
