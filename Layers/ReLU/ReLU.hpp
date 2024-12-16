@@ -1,5 +1,6 @@
 #pragma once
 #include "../Layers.hpp"
+#include "Logger/Logger.hpp"
 
 Tensor<float> reluGPU(Tensor<float>& input);
 __global__ void reluKernel(float* input, float* output, int width, int height, size_t inStride, size_t outStride);
@@ -17,6 +18,7 @@ struct ReLU : public Layer {
 
     // Forward pass for ReLU
     Tensor<float> computeForward(Tensor<float>& input) override {
+        Logger::infer(">>> ReLU");
         if (input.device == true) {
             return reluGPU(input);
         }
@@ -28,6 +30,7 @@ struct ReLU : public Layer {
     // Backward pass for ReLU
     Tensor<float> backward(Tensor<float>& dOutput) override {
         if (!require_grad) return Tensor<float>();
+        Logger::backprop(">>> ReLU");
 
         if (dOutput.device == true) {
             return reluBackwardGPU(this->lastInput, dOutput);

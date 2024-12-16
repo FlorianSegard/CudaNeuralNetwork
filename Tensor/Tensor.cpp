@@ -1,5 +1,8 @@
 #include "Tensor.hpp"
 
+#include <cmath>
+#include <bits/random.h>
+
 // ----------------------------------------------------------- TRANSPOSE ----------------------------------------------------------- \\
 
 template <class T>
@@ -71,7 +74,7 @@ Tensor<T> termtotermMultCPU(const Tensor<T>& input, const Tensor<T>& other) {
             int otherIndex = x + (other.stride / sizeof(T)) * y;
             int resultIndex = x + (result.stride / sizeof(T)) * y;
 
-            result.buffer[resultIndex] = input.buffer[inputIndex] + other.buffer[otherIndex];
+            result.buffer[resultIndex] = input.buffer[inputIndex] * other.buffer[otherIndex];
         }
     }
 
@@ -147,3 +150,59 @@ void fillOnesCPU(Tensor<T>& input) {
 template void fillOnesCPU(Tensor<float>& input);
 template void fillOnesCPU(Tensor<double>& input);
 template void fillOnesCPU(Tensor<int>& input);
+
+// ----------------------------------------------------------- Clip Gradients ----------------------------------------------------------- \\
+
+template <class T>
+void clipGradientsCPU(Tensor<T>& gradients, const T clipValue) {
+    for (int i = 0; i < gradients.height; i++) {
+        for (int j = 0; j < gradients.width; j++) {
+            gradients[i][j] = std::max(std::min(gradients[i][j], clipValue), -clipValue);
+        }
+    }
+}
+
+template void clipGradientsCPU(Tensor<float>& input, float clipValue);
+template void clipGradientsCPU(Tensor<double>& input, double clipValue);
+template void clipGradientsCPU(Tensor<int>& input, int clipValue);
+
+// ----------------------------------------------------------- Xavier Init weight ----------------------------------------------------------- \\
+
+template <class T>
+void initializeWeightsCPU(Tensor<T>& weights, float limit) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-limit, limit);
+
+    for (int i = 0; i < weights.height; i++) {
+        for (int j = 0; j < weights.width; j++) {
+            weights[i][j] = dis(gen);
+        }
+    }
+}
+
+template void initializeWeightsCPU(Tensor<float>& weights, float limit);
+template void initializeWeightsCPU(Tensor<double>& weights, float limit);
+
+
+// ----------------------------------------------------------- Sum column ----------------------------------------------------------- \\
+
+
+template <class T>
+Tensor<T> sumColumnsCPU(Tensor<T>& input){
+    Tensor<T> result(input.width, 1, false);
+
+    for (int col = 0; col < input.width; ++col) {
+        T sum = 0;
+        for (int row = 0; row < input.height; ++row) {
+            sum += input[row][col];
+        }
+        result[0][col] = sum;
+    }
+
+    return result;
+}
+
+template Tensor<float> sumColumnsCPU(Tensor<float>& input);
+template Tensor<double> sumColumnsCPU(Tensor<double>& input);
+template Tensor<int> sumColumnsCPU(Tensor<int>& input);

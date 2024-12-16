@@ -7,6 +7,7 @@
 #include "Layers/ReLU/ReLU.hpp"
 #include "Tensor/Tensor.hpp"
 #include "Loss/Loss.hpp"
+#include "Loader/ModelLoader.hpp"
 
 const int TRAIN_SIZE = 5000;
 const int TEST_SIZE = 1000;

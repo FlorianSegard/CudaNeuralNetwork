@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Tensor/Tensor.hpp"
+#include "Logger/Logger.hpp"
 
 float sumOfSquaresCPU(const Tensor<float>& input);
 
@@ -15,23 +16,58 @@ inline std::pair<float, Tensor<float>> computeMSELoss(Tensor<float>& predictions
     if (predictions.width != targets.width || predictions.height != targets.height) {
         throw std::invalid_argument("Dimensions do not match for loss calculation.");
     }
+    Logger::loss(">>> MSELoss");
 
-    Tensor<float> sub = predictions - targets;
+    Tensor<float> diff = predictions - targets;
 
     float sumSq = 0.0f;
     if (predictions.device) {
-        sumSq = sumOfSquaresGPU(sub); 
+        sumSq = sumOfSquaresGPU(diff);
     } else {
-        sumSq = sumOfSquaresCPU(sub);
+        sumSq = sumOfSquaresCPU(diff);
     }
 
     // Compute MSE: loss = sum((pred - target)^2) / (N)
-    float loss = sumSq / (sub.width * sub.height);
+    const auto N = static_cast<float>(diff.width * diff.height);
+    float loss = sumSq / N;
 
     // Compute gradient dLoss/dPred = 2*(pred - target)/N
 
-    float scale = 2.0f / (sub.width * sub.width);
-    Tensor<float> grad = sub * scale;
+    const float scale = 2.0f / N;
+    Tensor<float> grad = diff * scale;
+    Logger::loss("----- Final Grad -----");
+    Logger::debugTensor(LogLevel::LOSS, diff);
+
+    return {loss, std::move(grad)};
+}
+
+float computeCrossEntropyLossGPU(const Tensor<float>& predictions, const Tensor<float>& targets, Tensor<float>& gradients);
+
+__global__ void crossEntropyLossKernel(const float* predictions, const float* targets,
+                                      float* gradients, float* losses,
+                                      int width, int height,
+                                      size_t predStride, size_t targetStride, size_t gradStride);
+
+float computeCrossEntropyLossCPU(const Tensor<float>& predictions, const Tensor<float>& targets, Tensor<float>& gradients);
+
+// Main loss computation function
+inline std::pair<float, Tensor<float>> computeCrossEntropyLoss(Tensor<float>& predictions, Tensor<float>& targets) {
+    if (predictions.width != targets.width || predictions.height != targets.height) {
+        throw std::invalid_argument("Dimensions do not match for loss calculation.");
+    }
+    Logger::loss(">>> CrossEntropyLoss");
+
+    Tensor<float> grad(predictions.width, predictions.height, predictions.device);
+    float loss;
+
+    if (predictions.device) {
+        loss = computeCrossEntropyLossGPU(predictions, targets, grad);
+    } else {
+        loss = computeCrossEntropyLossCPU(predictions, targets, grad);
+    }
+
+    Logger::loss("----- Final Grad -----");
+    Logger::debugTensor(LogLevel::LOSS, grad);
 
     return {loss, std::move(grad)};
 }

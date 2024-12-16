@@ -1,4 +1,5 @@
 #include "Tensor.hpp"
+#include <curand_kernel.h>
 
 // ----------------------------------------------------------- TRANSPOSE ----------------------------------------------------------- \\
 
@@ -43,7 +44,7 @@ __global__ void fillZeroKernel(T* input, int width, int height, size_t inStride)
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        input[x + inStride / sizeof(T) * y] = 0;
+        input[y * (inStride / sizeof(T)) + x] = 0;
     }
 }
 
@@ -95,7 +96,7 @@ template void fillZeroGPU(Tensor<int>& input);
 
 
 
-#define TILE_SIZE 16
+#define TILE_SIZE 32
 
 template <class T>
 __global__ void dotGPUKernel(T* input, T* other, T* result,
@@ -149,7 +150,7 @@ __global__ void dotGPUKernel(T* input, T* other, T* result,
 
 template <class T>
 Tensor<T> dotGPU(const Tensor<T>& input, const Tensor<T>& other) {
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((other.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
 
@@ -196,7 +197,7 @@ template <class T>
 Tensor<T> termtotermMultGPU(const Tensor<T>& input, const Tensor<T>& other) {
     Tensor<T> result(input.width, input.height, true);
 
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x, 
                   (input.height + blockSize.y - 1) / blockSize.y);
 
@@ -262,9 +263,9 @@ __global__ void scalarMultiplyKernel(const T* input, T* output, T scalar, int wi
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        int result = y * (outStride / sizeof(T)) + x;
-        int input_index = y * (inStride / sizeof(T)) + x;
-        output[result] = input[input_index] * scalar;
+        int inputIndex = y * (inStride / sizeof(T)) + x;
+        int outputIndex = y * (outStride / sizeof(T)) + x;
+        output[outputIndex] = input[inputIndex] * scalar;
     }
 }
 
@@ -272,7 +273,7 @@ template <class T>
 Tensor<T> scalarMultiplyGPU(const Tensor<T>& input, const T scalar) {
     Tensor<T> result(input.width, input.height, true);
 
-    dim3 blockSize(16, 16);
+    dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
 
@@ -296,14 +297,12 @@ __global__ void fillOnesKernel(T* input, int width, int height, size_t stride) {
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
-        int result = y * (stride / sizeof(T)) + x;
-        input[result] = T(1);
+        input[y * (stride / sizeof(T)) + x] = T(1);
     }
 }
 
 template <class T>
 void fillOnesGPU(Tensor<T>& input) {
-
     dim3 blockSize(32, 32);
     dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x,
                   (input.height + blockSize.y - 1) / blockSize.y);
@@ -323,3 +322,141 @@ void fillOnesGPU(Tensor<T>& input) {
 template void fillOnesGPU(Tensor<float>& input);
 template void fillOnesGPU(Tensor<double>& input);
 template void fillOnesGPU(Tensor<int>& input);
+
+// ----------------------------------------------------------- Clip Gradients ----------------------------------------------------------- \\
+
+template <typename T>
+__global__ void clipGradientsKernel(T* gradients, int width, int height, size_t stride, T clipValue) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        size_t index = y * (stride / sizeof(T)) + x;
+        gradients[index] = max(min(gradients[index], clipValue), -clipValue);
+    }
+}
+
+template <class T>
+void clipGradientsGPU(Tensor<T>& gradients, const T clipValue) {
+    dim3 blockSize(32, 32);
+    dim3 gridSize(
+        (gradients.width + blockSize.x - 1) / blockSize.x,
+        (gradients.height + blockSize.y - 1) / blockSize.y
+    );
+
+    clipGradientsKernel<<<gridSize, blockSize>>>(
+        gradients.buffer,
+        gradients.width,
+        gradients.height,
+        gradients.stride,
+        clipValue
+    );
+
+    cudaError_t err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+}
+
+template void clipGradientsGPU(Tensor<float>& gradients, float clipValue);
+template void clipGradientsGPU(Tensor<double>& gradients, double clipValue);
+template void clipGradientsGPU(Tensor<int>& gradients, int clipValue);
+
+
+// ----------------------------------------------------------- Xavier Init weight Kernel ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void initWeightsKernel(T* weights, int width, int height, size_t stride, float limit, unsigned int seed) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        // Initialize CUDA random number generator
+        curandState state;
+        curand_init(seed + y * width + x, 0, 0, &state);
+
+        // generate random number between -limit and limit
+        float random = (2.0f * curand_uniform(&state) - 1.0f) * limit;
+
+        size_t index = y * (stride / sizeof(T)) + x;
+        weights[index] = random;
+    }
+}
+
+template <class T>
+void initWeightsGPU(Tensor<T>& weights, float limit) {
+    dim3 blockSize(32, 32);
+    dim3 gridSize(
+        (weights.width + blockSize.x - 1) / blockSize.x,
+        (weights.height + blockSize.y - 1) / blockSize.y
+    );
+
+    // using time as the seed
+    auto seed = static_cast<unsigned int>(time(nullptr));
+
+    initWeightsKernel<<<gridSize, blockSize>>>(
+        weights.buffer,
+        weights.width,
+        weights.height,
+        weights.stride,
+        limit,
+        seed
+    );
+
+    cudaError_t err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+}
+
+template void initWeightsGPU(Tensor<float>& weights, float limit);
+template void initWeightsGPU(Tensor<double>& weights, float limit);
+
+
+// ----------------------------------------------------------- Sum column ----------------------------------------------------------- \\
+
+
+template <class T>
+__global__ void sumColumnsKernel(const T* input, T* output, int width, int height, size_t stride) {
+    int col = blockIdx.x * blockDim.x + threadIdx.x; // Column index
+    if (col >= width) return; // Ensure we don’t go out of bounds
+
+    T sum = 0;
+    for (int row = 0; row < height; ++row) {
+        sum += input[row * stride / sizeof(T) + col];
+    }
+    output[col] = sum;
+}
+
+
+template <class T>
+Tensor<T> sumColumnsGPU(Tensor<T>& input) {
+    // Create a result tensor for the output (1 row, `width` columns)
+    Tensor<T> result(input.width, 1, true);
+
+    // Configure CUDA kernel
+    dim3 blockSize(256);
+    dim3 gridSize((input.width + blockSize.x - 1) / blockSize.x);
+
+    // Launch the kernel
+    sumColumnsKernel<T><<<gridSize, blockSize>>>(
+        input.buffer, result.buffer, input.width, input.height, input.stride
+    );
+    cudaDeviceSynchronize();
+
+    // Check for CUDA errors
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+
+    return result; // Return the result tensor
+}
+
+// Explicit template instantiations
+template Tensor<float> sumColumnsGPU(Tensor<float>& input);
+template Tensor<double> sumColumnsGPU(Tensor<double>& input);
+template Tensor<int> sumColumnsGPU(Tensor<int>& input);
+
+
+

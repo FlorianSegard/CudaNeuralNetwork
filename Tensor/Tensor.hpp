@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cmath>
 #include <cuda_runtime.h>
 #include <stdexcept>
 #include <cstring>
 #include <memory>
 #include <iostream>
+#include <random>
+
 
 template <class T>
 struct Tensor;
@@ -88,6 +91,38 @@ Tensor<T> scalarMultiplyGPU(const Tensor<T>& input, T scalar);
 template <class T>
 Tensor<T> scalarMultiplyCPU(const Tensor<T>& input, T scalar);
 
+// ----------------------------------------------------------- Clip Gradients ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void clipGradientsKernel(T* gradients, int width, int height, size_t stride, T clipValue);
+
+template <class T>
+void clipGradientsGPU(Tensor<T>& gradients, T clipValue);
+
+template <class T>
+void clipGradientsCPU(Tensor<T>& gradients, T clipValue);
+
+// ----------------------------------------------------------- Xavier Init weight ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void initWeightsKernel(T* weights, int width, int height, size_t stride, float limit, unsigned int seed);
+
+template <class T>
+void initWeightsGPU(Tensor<T>& weights, float limit);
+
+template <class T>
+void initializeWeightsCPU(Tensor<T>& weights, float limit);
+
+// ----------------------------------------------------------- Sum column ----------------------------------------------------------- \\
+
+template <class T>
+__global__ void sumColumnsKernel(const T* input, T* output, int width, int height, size_t stride);
+
+template <class T>
+Tensor<T> sumColumnsGPU(Tensor<T>& input);
+
+template <class T>
+Tensor<T> sumColumnsCPU(Tensor<T>& input);
 
 // -------------------------------------------- DEFINITIONS -------------------------------------------- \\
 
@@ -116,7 +151,6 @@ struct Tensor : TensorView<T> {
     Tensor(const Tensor& other) = delete;
     Tensor& operator=(const Tensor& other) = delete;
 
-    
 
     T* operator[](int y);
     const T* operator[](int y) const;
@@ -128,13 +162,14 @@ struct Tensor : TensorView<T> {
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
     Tensor transpose() const;
+    Tensor dot(const Tensor& other);
+    Tensor termToTermMult(const Tensor& other);
+    Tensor sumColumns();
     void print();
-
     void fillZero();
     void fillOnes();
-
-    Tensor dot(const Tensor& other);
-    Tensor termtotermMult(const Tensor& other);
+    void clipGradients(T clipValue);
+    void initializeWeights(int fanIn, int fanOut);
 };
 
 template <class T>
@@ -300,6 +335,7 @@ template <class T>
 Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
     if (this->width != other.height)
         throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+
     if (this->device)
         return dotGPU(*this, other);
     else
@@ -307,9 +343,10 @@ Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
 }
 
 template <class T>
-Tensor<T> Tensor<T>::termtotermMult(const Tensor<T>& other) {
+Tensor<T> Tensor<T>::termToTermMult(const Tensor<T>& other) {
     if (this->width != other.width || this->height != other.height)
         throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+
     if (this->device)
         return termtotermMultGPU(*this, other);
     else
@@ -332,6 +369,37 @@ void Tensor<T>::print() {
     }
 }
 
+template <class T>
+void Tensor<T>::clipGradients(const T clipValue) {
+    if (this->device)
+        clipGradientsGPU(*this, clipValue);
+    else
+        clipGradientsCPU(*this, clipValue);
+}
+
+template <class T>
+void Tensor<T>::initializeWeights(int fanIn, int fanOut) {
+    float limit = std::sqrt(2.0f / (float)(fanIn + fanOut));
+
+    if (this->device)
+        initWeightsGPU(*this, limit);
+    else
+        initializeWeightsCPU(*this, limit);
+}
+
+
+template <class T>
+Tensor<T> Tensor<T>::sumColumns() {
+    if (this->width == 0 || this->height == 0) {
+        throw std::invalid_argument("Tensor dimensions must be non-zero.");
+    }
+
+    if (this->device) {
+        return sumColumnsGPU(*this);
+    } else {
+        return sumColumnsCPU(*this);
+    }
+}
 
 
 //TODO implement random filling test later maybe: glorot filling

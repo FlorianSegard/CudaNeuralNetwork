@@ -1,6 +1,10 @@
 #include "../Layers/Layers.hpp"
+<<<<<<< HEAD
 #include <unordered_map>
 
+=======
+#include "../Tensor/Tensor.hpp"
+>>>>>>> 98670720f6cb58523184f1fec1153a6fffb1d198
 
 class Optimizer {
 public:
@@ -13,10 +17,12 @@ public:
 class SGD : public Optimizer {
 private:
     float learningRate;
+    float clipValue;
 
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityWeightsMap;
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityBiasesMap;
 public:
+
     float momentum = 0;
 
     explicit SGD(float lr, float momentum) : learningRate(lr), momentum(momentum) {}

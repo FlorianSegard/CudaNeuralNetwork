@@ -1,20 +1,29 @@
 #pragma once
 
-#include <cstring>
-#include <string_view>
 #include <memory>
 #include "../Layers/Layers.hpp"
 #include "../Optimizer/Optimizer.hpp"
 #include "../Layers/Linear/Linear.hpp"
-#include <optional>
 #include <utility>
 #include <vector>
 
+#include "Logger/Logger.hpp"
+
+float computeGradientNorm(const Tensor<float>& gradients) {
+    float norm = 0.0f;
+    for (int i = 0; i < gradients.height; i++) {
+        for (int j = 0; j < gradients.width; j++) {
+            norm += gradients[i][j] * gradients[i][j];
+        }
+    }
+    return std::sqrt(norm);
+}
 
 struct Model
 {
     std::vector<std::unique_ptr<Layer>> layers;
     SGD optimizer;
+    bool test = true;
 
     Model() : optimizer(0.001f, 0) {}
 
@@ -33,18 +42,22 @@ struct Model
     }
 
     Tensor<float> forward(Tensor<float> input) {
-        // std::cout << "4" << std::endl;
         for (auto& layer : layers) {
             input = layer->forward(input);
-            // std::cout << "7" << std::endl;
 
+            Logger::infer("==== OUT of forward Layer ====");
+            Logger::debugTensor(LogLevel::INFER, input);
         }
         return input;
     }
 
     void backward(Tensor<float>& dOutput) {
+
         Tensor<float> dInput = dOutput.clone();
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+            Logger::backprop("==== IN of backward Layer ====");
+            Logger::debugTensor(LogLevel::BACKPROP, dInput);
+
             dInput = (*it)->backward(dInput);
         }
     }
@@ -52,6 +65,15 @@ struct Model
     void step() {
         for (auto& layer : layers) {
             if (auto* linear = dynamic_cast<Linear*>(layer.get())) {
+                if (test) {
+                    Tensor<float> linear_param = linear->params.dWeights.switchDevice(false);
+                    float norm = computeGradientNorm(linear_param);
+                    if (norm > 100.0f) {
+                        std::cout << "Gradient norm is exploding: " << norm << std::endl;
+                        test = false;
+                    }
+                }
+
                 optimizer.update(linear->params);
             }
         }
