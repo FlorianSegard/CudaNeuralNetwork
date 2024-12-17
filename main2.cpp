@@ -5,17 +5,18 @@
 #include "Layers/Softmax/Softmax.hpp"
 #include "Tensor/Tensor.hpp"
 #include "Loss/CategoricalCrossEntropy/CatCrossEntropy.hpp"
-#include "Loader/ModelLoader.hpp"
+// #include "Loader/ModelLoader.hpp"
 #include "Logger/Logger.hpp"
 #include "MNIST/MNISTLoader.hpp"
+#include "Scheduler/Scheduler.hpp"
 
-const int BATCH_SIZE = 1;
+const int BATCH_SIZE = 32;
 const int INPUT_FEATURES = 784;  // 28x28 pixels
 const int HIDDEN_FEATURES = 20;
 const int HIDDEN_FEATURES_2 = 20;
 const int OUTPUT_FEATURES = 10;  // 10 digits
-const int TRAIN_SAMPLES = 1000;
-const int TEST_SAMPLES = 5;
+const int TRAIN_SAMPLES = 10000;
+const int TEST_SAMPLES = 1000;
 const int EPOCHS = 30;
 
 void check_weights(Model* model) {
@@ -110,7 +111,11 @@ int main(int argc, char* argv[]) {
     // Create model
     bool onGPU = true;
     Model model;
-    model.setOptimizer(SGD(0.001f, 0.0f));
+    SGD optimizer = SGD(0.01f, 0.0f);
+
+    model.setOptimizer(optimizer);
+
+    ReduceLROnPlateau scheduler = ReduceLROnPlateau(&optimizer);
 
     // Add layers with ReLU activation
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
@@ -119,8 +124,8 @@ int main(int argc, char* argv[]) {
     model.addLayer(std::make_unique<Softmax>(true));
 
     // Load training data
-    std::string train_images_path = "/home/alex/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";
-    std::string train_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/train-labels-idx1-ubyte/train-labels-idx1-ubyte";
+    std::string train_images_path = "/home/florian/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";
+    std::string train_labels_path = "/home/florian/CudaNeuralNetwork/MNIST/train-labels-idx1-ubyte/train-labels-idx1-ubyte";
 
     auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, true, TRAIN_SAMPLES);
 
@@ -158,12 +163,15 @@ int main(int argc, char* argv[]) {
             model.backward(dOutput);
             model.step();
 
+
             //check_weights(&model);
             model.zeroGrad();
         }
 
         // Print epoch statistics
         float avg_loss = total_loss / batch_count;
+        scheduler.step(avg_loss);
+
         float avg_accuracy = (total_accuracy / batch_count) * 100.0f;
         std::cout << "Epoch " << epoch + 1 << "/" << EPOCHS
                   << ", Loss: " << avg_loss
@@ -171,8 +179,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Evaluation on test set
-    std::string test_images_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
-    std::string test_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte";
+    std::string test_images_path = "/home/florian/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
+    std::string test_labels_path = "/home/florian/CudaNeuralNetwork/MNIST/t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte";
 
     auto [test_images, test_labels] = MNISTLoader::loadMNIST(test_images_path, test_labels_path, true, TEST_SAMPLES);
 

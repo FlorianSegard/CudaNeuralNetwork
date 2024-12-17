@@ -1,12 +1,36 @@
-#include <iomanip>
+#pragma once
 
+#include <iomanip>
 #include "../Layers/Layers.hpp"
 #include <unordered_map>
-
 #include "Logger/Logger.hpp"
 
+
+
 class Optimizer {
+protected:
+    float learningRate;
+    float clipValue;
+    float momentum;
+    float weightDecay;
+
 public:
+
+    Optimizer(float lr, float mom, float wd, float clip)
+        : learningRate(lr), momentum(mom), weightDecay(wd), clipValue(clip) {}
+
+    // Getters
+    float getLearningRate() const { return learningRate; }
+    float getMomentum() const { return momentum; }
+    float getWeightDecay() const { return weightDecay; }
+    float getClipValue() const { return clipValue; }
+
+    // Setter LR
+    void setLearningRate(float newLearningRate) {
+        learningRate = newLearningRate;
+    }
+
+
     virtual ~Optimizer() = default;
 
     virtual void update(LayerParams& params) = 0;
@@ -15,24 +39,14 @@ public:
 
 class SGD : public Optimizer {
 private:
-    float learningRate;
-    float clipValue;
-    float momentum;
-    float weightDecay;
-
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityWeightsMap;
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityBiasesMap;
 
 public:
     explicit SGD(float lr = 0.001f, float momentum = 0.0f, float weightDecay = 0.0f, float clipValue = 0.0f)
-        : learningRate(lr), momentum(momentum), weightDecay(weightDecay), clipValue(clipValue) {
+        : Optimizer(lr, momentum, weightDecay, clipValue) {
     }
 
-    // Getters
-    float getLearningRate() const { return learningRate; }
-    float getMomentum() const { return momentum; }
-    float getWeightDecay() const { return weightDecay; }
-    float getClipValue() const { return clipValue; }
 
     void update(LayerParams& params) override {
         if (weightDecay > 0.0f) {
