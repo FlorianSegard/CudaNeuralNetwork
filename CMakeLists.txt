@@ -31,9 +31,10 @@ add_executable(first_test_model
     Tensor/Tensor.hpp
     Model/Model.hpp
     Optimizer/Optimizer.hpp
+    Loader/ONNXLoader.hpp
+    Loader/TabularLoader.hpp
     Layers/Layers.hpp
     Layers/Linear/Linear.hpp
-    Loader/ModelLoader.hpp
     Layers/ReLU/ReLU.cpp
     Layers/ReLU/ReLU.cu
     Layers/ReLU/ReLU.hpp
