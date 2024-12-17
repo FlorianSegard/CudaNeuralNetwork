@@ -122,7 +122,7 @@ add_executable(first_test_model
     Logger/Logger.cpp
     Logger/Logger.hpp
     Scheduler/Scheduler.hpp
-    main2.cpp
+    mainforbenchmark.cpp
 )
 
 # Include the current directory for private includes
