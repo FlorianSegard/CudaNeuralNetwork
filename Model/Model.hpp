@@ -97,7 +97,7 @@ struct Model
 
     void backward(Tensor<float>& dOutput) {
 
-        Tensor<float> dInput = dOutput.clone();
+        Tensor<float> dInput = std::move(dOutput);
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
             Logger::backprop("==== IN of backward Layer ====");
             Logger::debugTensor(LogLevel::BACKPROP, dInput);
