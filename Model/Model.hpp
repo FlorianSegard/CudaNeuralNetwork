@@ -77,10 +77,10 @@ struct Model
         std::ostringstream ss;
         ss << std::fixed << std::setprecision(6);
         ss << "====== SGD init ======"
-           << "\n ├── learning rate: " << optimizer.learningRate
-           << "\n ├── momentum: " << (optimizer.momentum != 0.0f? std::to_string(optimizer.momentum) : "None")
-           << "\n ├── weight_decay: " << (optimizer.weightDecay != 0.0f ? std::to_string(optimizer.momentum) : "None")
-           << "\n └── grad clipping: " << (optimizer.clipValue != 0.0f ? std::to_string(optimizer.momentum) : "None")
+           << "\n ├── learning rate: " << optimizer.getLearningRate()
+           << "\n ├── momentum: " << (optimizer.getMomentum() != 0.0f? std::to_string(optimizer.getMomentum()) : "None")
+           << "\n ├── weight_decay: " << (optimizer.getWeightDecay() != 0.0f ? std::to_string(optimizer.getWeightDecay()) : "None")
+           << "\n └── grad clipping: " << (optimizer.getClipValue() != 0.0f ? std::to_string(optimizer.getClipValue()) : "None")
            << "\n";
         Logger::debug(ss.str());
     }

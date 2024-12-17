@@ -15,17 +15,24 @@ public:
 
 class SGD : public Optimizer {
 private:
-    std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityWeightsMap;
-    std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityBiasesMap;
-public:
     float learningRate;
     float clipValue;
     float momentum;
     float weightDecay;
 
+    std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityWeightsMap;
+    std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityBiasesMap;
+
+public:
     explicit SGD(float lr = 0.001f, float momentum = 0.0f, float weightDecay = 0.0f, float clipValue = 0.0f)
         : learningRate(lr), momentum(momentum), weightDecay(weightDecay), clipValue(clipValue) {
     }
+
+    // Getters
+    float getLearningRate() const { return learningRate; }
+    float getMomentum() const { return momentum; }
+    float getWeightDecay() const { return weightDecay; }
+    float getClipValue() const { return clipValue; }
 
     void update(LayerParams& params) override {
         if (weightDecay > 0.0f) {
