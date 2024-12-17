@@ -345,7 +345,7 @@ Tensor<T> Tensor<T>::dot(const Tensor<T>& other) {
 template <class T>
 Tensor<T> Tensor<T>::termToTermMult(const Tensor<T>& other) {
     if (this->width != other.width || this->height != other.height)
-        throw std::out_of_range("Matrix dimensions are incompatible for dot product.");
+        throw std::out_of_range("Matrix dimensions are incompatible for term to term product.");
 
     if (this->device)
         return termtotermMultGPU(*this, other);

@@ -22,7 +22,7 @@ struct Sigmoid : public Layer {
         this->used_with_bin_cross_entropy = used_with_bin_cross_entropy;
     }
 
-    Tensor<float> computeForward(Tensor<float>& input) override {
+    Tensor<float> computeForward(Tensor<float>& input, bool eval) override {
         Logger::infer(">>> Sigmoid");
         if (input.device) {
             return sigmoidGPU(input);

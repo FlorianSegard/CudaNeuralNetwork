@@ -9,6 +9,7 @@
 #include "Logger/Logger.hpp"
 #include "MNIST/MNISTLoader.hpp"
 #include "Scheduler/Scheduler.hpp"
+#include "Layers/Dropout/Dropout.hpp"
 
 const int BATCH_SIZE = 32;
 const int INPUT_FEATURES = 784;  // 28x28 pixels
@@ -109,7 +110,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create model
-    bool onGPU = true;
+    bool onGPU = false;
     Model model;
     SGD optimizer = SGD(0.01f, 0.0f);
 
@@ -120,6 +121,7 @@ int main(int argc, char* argv[]) {
     // Add layers with ReLU activation
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
     model.addLayer(std::make_unique<ReLU>());
+    model.addLayer(std::make_unique<Dropout>(0.5f));
     model.addLayer(std::make_unique<Linear>(HIDDEN_FEATURES, OUTPUT_FEATURES, onGPU));
     model.addLayer(std::make_unique<Softmax>(true));
 
@@ -129,6 +131,8 @@ int main(int argc, char* argv[]) {
 
     auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, true, TRAIN_SAMPLES);
 
+
+    model.trainMode();
     // Training loop
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
         float total_loss = 0.0f;
@@ -177,6 +181,7 @@ int main(int argc, char* argv[]) {
                   << ", Loss: " << avg_loss
                   << ", Training Accuracy: " << avg_accuracy << "%" << std::endl;
     }
+    freeCurandStates();
 
     // Evaluation on test set
     std::string test_images_path = "/home/florian/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
@@ -187,7 +192,9 @@ int main(int argc, char* argv[]) {
     float test_accuracy = 0.0f;
     float test_loss = 0.0f;
     int test_batch_count = 0;
+    std::cout << "eval mode" << std::endl;
 
+    model.evalMode();
     for (size_t i = 0; i < test_images.size(); i += BATCH_SIZE) {
         size_t batchEnd = std::min(i + BATCH_SIZE, test_images.size());
         size_t batchSize = batchEnd - i;
@@ -213,6 +220,5 @@ int main(int argc, char* argv[]) {
     std::cout << "Test Results:" << std::endl;
     std::cout << "Loss: " << final_test_loss << std::endl;
     std::cout << "Accuracy: " << final_test_accuracy << "%" << std::endl;
-
     return 0;
 }

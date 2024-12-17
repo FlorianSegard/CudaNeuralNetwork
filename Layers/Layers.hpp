@@ -46,10 +46,11 @@ struct Layer {
     
     virtual ~Layer() = default;
 
-    Tensor<float> forward(Tensor<float>& input) {
+    Tensor<float> forward(Tensor<float>& input, bool eval) {
         lastInput = input.clone();
-        return computeForward(input);
+        return computeForward(input, eval);
     }
+
 
     void switchDevice(bool device) {
         params.switchDevice(device);
@@ -64,8 +65,7 @@ struct Layer {
 
 
 protected:
-
-    virtual Tensor<float> computeForward(Tensor<float>& input) = 0;
+    virtual Tensor<float> computeForward(Tensor<float>& input, bool eval) = 0;
 
     virtual void onDeviceChanged(bool device) {
         const char* layerType = typeid(*this).name(); // Get derived class name
