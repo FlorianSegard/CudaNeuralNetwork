@@ -10,6 +10,7 @@
 #include "Layers/ReLU/ReLU.hpp"
 #include "Layers/Sigmoid/Sigmoid.hpp"
 #include "Layers/Softmax/Softmax.hpp"
+#include "Layers/Dropout/Dropout.hpp"
 #include "Logger/Logger.hpp"
 
 float computeGradientNorm(const Tensor<float>& gradients) {
@@ -27,14 +28,15 @@ struct Model
     std::vector<std::unique_ptr<Layer>> layers;
     SGD optimizer;
     bool test_grad_explosion = false;
+    bool eval = false;
 
     Model() : optimizer(0.001f, 0) {}
 
     explicit Model(std::vector<std::unique_ptr<Layer>> other_layers)
-            : layers(std::move(other_layers)), optimizer(0.001f, 0) {}
+            : layers(std::move(other_layers)), optimizer(0.001f, 0){}
 
     Model(std::vector<std::unique_ptr<Layer>>& other_layers, SGD opt)
-            : layers(std::move(other_layers)), optimizer(std::move(opt)) {}
+            : layers(std::move(other_layers)), optimizer(std::move(opt)){}
 
     void addLayer(std::unique_ptr<Layer> layer) {
         std::string layerType;
@@ -87,8 +89,7 @@ struct Model
 
     Tensor<float> forward(Tensor<float> input) {
         for (auto& layer : layers) {
-            input = layer->forward(input);
-
+            input = layer->forward(input, eval);
             Logger::infer("==== OUT of forward Layer ====");
             Logger::debugTensor(LogLevel::INFER, input);
         }
@@ -133,5 +134,13 @@ struct Model
         for (auto& layer : layers) {
             layer->zeroGrad();
         }
+    }
+    
+    void evalMode() {
+        eval = true;
+    }
+    
+    void trainMode() {
+        eval = false;
     }
 };

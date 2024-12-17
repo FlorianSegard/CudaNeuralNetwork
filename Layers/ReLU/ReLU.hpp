@@ -17,7 +17,7 @@ struct ReLU : public Layer {
         : Layer(inputSize, outputSize, device, require_grad) {}
 
     // Forward pass for ReLU
-    Tensor<float> computeForward(Tensor<float>& input) override {
+    Tensor<float> computeForward(Tensor<float>& input, bool eval) override {
         Logger::infer(">>> ReLU");
         if (input.device == true) {
             return reluGPU(input);

@@ -21,7 +21,7 @@ struct Softmax : public Layer {
     }
 
     // Forward pass for Softmax
-    Tensor<float> computeForward(Tensor<float>& input) override {
+    Tensor<float> computeForward(Tensor<float>& input, bool eval) override {
         Logger::infer(">>> Softmax");
         if (input.device == true) {
             return softmaxGPU(input);

@@ -13,7 +13,7 @@ struct Linear : public Layer {
         this->params.biases.fillZero();
     }
 
-    Tensor<float> computeForward(Tensor<float>& input) override {
+    Tensor<float> computeForward(Tensor<float>& input, bool eval) override {
         // Linear forward: output = input @ weights.T + biases
         Logger::infer(">>> Linear");
 
