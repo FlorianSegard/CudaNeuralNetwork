@@ -1,5 +1,5 @@
 #pragma once
-#include "ModelLoader.hpp"
+#include "ONNXLoader.hpp"
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -8,8 +8,47 @@
 #include "onnx/onnx_pb.h"
 #include "onnx/proto_utils.h"
 
-class ModelLoader {
+class ONNXLoader {
+private:
+    static void analyzeGraph(const onnx::GraphProto& graph) {
+        Logger::debug("\n====== ONNX Graph Analysis ======");
+        Logger::debug("Inputs:");
+        for (const auto& input : graph.input()) {
+            Logger::debug(" - " + input.name());
+        }
+
+        Logger::debug("\nOutputs:");
+        for (const auto& output : graph.output()) {
+            Logger::debug(" - " + output.name());
+        }
+
+        Logger::debug("\nNodes:");
+        for (const auto& node : graph.node()) {
+            Logger::debug(" - " + node.op_type() + " (" + node.name() + ")");
+        }
+    }
+
 public:
+    static void onnxPrettyPrint(const std::string& model_path) {
+        onnx::ModelProto model_proto;
+        std::ifstream in(model_path, std::ios_base::binary);
+
+        if (!in.is_open()) {
+            throw std::runtime_error("Failed to open model file: " + model_path);
+        }
+
+        if (!model_proto.ParseFromIstream(&in)) {
+            throw std::runtime_error("Failed to parse ONNX model");
+        }
+        in.close();
+
+        std::cout << "\n======= loadONNX model =======" << "\n";
+
+        const auto& graph = model_proto.graph();
+
+        analyzeGraph(graph);
+    }
+
     static Model loadONNX(const std::string& model_path, bool useGPU = false) {
         onnx::ModelProto model_proto;
         std::ifstream in(model_path, std::ios_base::binary);
