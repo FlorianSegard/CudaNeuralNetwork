@@ -5,7 +5,7 @@
 
 float computeCatCrossEntropyLossGPU(const Tensor<float>& predictions, const Tensor<float>& targets, Tensor<float>& gradients);
 
-__global__ void crossCatEntropyLossKernel(const float* predictions, const float* targets,
+__global__ void crossEntropyLossKernel(const float* predictions, const float* targets,
                                       float* gradients, float* losses,
                                       int width, int height,
                                       size_t predStride, size_t targetStride, size_t gradStride);

@@ -1,7 +1,7 @@
 #include "CatCrossEntropy.hpp"
 
 __global__ void crossEntropyLossKernel(const float* predictions, const float* targets,
-                                       float* gradients, float* losses,
+                                       float* gradients, float* totalLoss,
                                        int width, int height,
                                        size_t predStride, size_t targetStride, size_t gradStride) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -25,7 +25,8 @@ __global__ void crossEntropyLossKernel(const float* predictions, const float* ta
         if (target > 0) {
             loss = -target * logf(pred + epsilon);
         }
-        losses[y * width + x] = loss;
+
+        atomicAdd(totalLoss, loss);
     }
 }
 
@@ -47,6 +48,7 @@ float computeCatCrossEntropyLossGPU(const Tensor<float>& predictions, const Tens
     float h_loss;
     cudaMemcpy(&h_loss, d_loss, sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_loss);
+    cudaDeviceSynchronize();
 
     return h_loss / (float) predictions.height;
 }
