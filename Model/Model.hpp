@@ -7,6 +7,9 @@
 #include <utility>
 #include <vector>
 
+#include "Layers/ReLU/ReLU.hpp"
+#include "Layers/Sigmoid/Sigmoid.hpp"
+#include "Layers/Softmax/Softmax.hpp"
 #include "Logger/Logger.hpp"
 
 float computeGradientNorm(const Tensor<float>& gradients) {
@@ -23,7 +26,7 @@ struct Model
 {
     std::vector<std::unique_ptr<Layer>> layers;
     SGD optimizer;
-    bool test = true;
+    bool test_grad_explosion = false;
 
     Model() : optimizer(0.001f, 0) {}
 
@@ -34,11 +37,52 @@ struct Model
             : layers(std::move(other_layers)), optimizer(std::move(opt)) {}
 
     void addLayer(std::unique_ptr<Layer> layer) {
+        std::string layerType;
+        int inputDim = 0;
+        int outputDim = 0;
+
+        if (auto* linear = dynamic_cast<Linear*>(layer.get())) {
+            layerType = "Linear";
+            inputDim = linear->params.inputSize;
+            outputDim = linear->params.outputSize;
+        } else if (dynamic_cast<ReLU*>(layer.get())) {
+            layerType = "ReLU";
+        } else if (dynamic_cast<Softmax*>(layer.get())) {
+            layerType = "Softmax";
+        } else if (dynamic_cast<Sigmoid*>(layer.get())) {
+            layerType = "Softmax";
+        }
+
+        // Create visualization
+        std::ostringstream ss;
+        ss << (layers.size() == 0 ? "====== Model architecture ======\n" : "")
+           << "Adding Layer (" << layers.size() + 1 << "):"
+           << "\n ├── Type: " << layerType;
+
+        if (inputDim > 0 && outputDim > 0) {
+            ss << "\n ├── Input dim: " << inputDim
+               << "\n └── Output dim: " << outputDim;
+        } else {
+            ss << "\n └── Activation layer";
+        }
+
+        Logger::debug(ss.str());
+
         layers.push_back(std::move(layer));
     }
 
     void setOptimizer(const SGD& opt) {
         optimizer = opt;
+
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(6);
+        ss << "====== SGD init ======"
+           << "\n ├── learning rate: " << optimizer.learningRate
+           << "\n ├── momentum: " << (optimizer.momentum != 0.0f? std::to_string(optimizer.momentum) : "None")
+           << "\n ├── weight_decay: " << (optimizer.weightDecay != 0.0f ? std::to_string(optimizer.momentum) : "None")
+           << "\n └── grad clipping: " << (optimizer.clipValue != 0.0f ? std::to_string(optimizer.momentum) : "None")
+           << "\n";
+        Logger::debug(ss.str());
     }
 
     Tensor<float> forward(Tensor<float> input) {
@@ -65,12 +109,12 @@ struct Model
     void step() {
         for (auto& layer : layers) {
             if (auto* linear = dynamic_cast<Linear*>(layer.get())) {
-                if (test) {
+                if (test_grad_explosion) {
                     Tensor<float> linear_param = linear->params.dWeights.switchDevice(false);
                     float norm = computeGradientNorm(linear_param);
                     if (norm > 100.0f) {
                         std::cout << "Gradient norm is exploding: " << norm << std::endl;
-                        test = false;
+                        test_grad_explosion = false;
                     }
                 }
 

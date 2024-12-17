@@ -1,5 +1,9 @@
+#include <iomanip>
+
 #include "../Layers/Layers.hpp"
 #include <unordered_map>
+
+#include "Logger/Logger.hpp"
 
 class Optimizer {
 public:
@@ -11,19 +15,28 @@ public:
 
 class SGD : public Optimizer {
 private:
-    float learningRate;
-    float clipValue;
-
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityWeightsMap;
     std::unordered_map<const LayerParams*, std::shared_ptr<Tensor<float>>> velocityBiasesMap;
 public:
+    float learningRate;
+    float clipValue;
+    float momentum;
+    float weightDecay;
 
-    float momentum = 0.0;
-
-    explicit SGD(float lr, float momentum = 0.0) : learningRate(lr), momentum(momentum) {}
+    explicit SGD(float lr = 0.001f, float momentum = 0.0f, float weightDecay = 0.0f, float clipValue = 0.0f)
+        : learningRate(lr), momentum(momentum), weightDecay(weightDecay), clipValue(clipValue) {
+    }
 
     void update(LayerParams& params) override {
+        if (weightDecay > 0.0f) {
+            Tensor<float> weightDecayGrad = params.weights * weightDecay;
+            params.dWeights = params.dWeights + weightDecayGrad;
+        }
 
+        if (clipValue > 0.0f) {
+            params.dWeights.clipGradients(clipValue);
+            params.dBiases.clipGradients(clipValue);
+        }
 
         if (momentum == 0.0)
         {
@@ -42,7 +55,6 @@ public:
 
             params.weights = params.weights - (*velocityWeights) * learningRate;
             params.biases = params.biases - (*velocityBiases) * learningRate;
-
         }
     }
 
