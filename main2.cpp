@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create model
-    bool onGPU = false;
+    bool onGPU = true;
     Model model;
     SGD optimizer = SGD(0.01f, 0.0f);
 
@@ -121,13 +121,13 @@ int main(int argc, char* argv[]) {
     // Add layers with ReLU activation
     model.addLayer(std::make_unique<Linear>(INPUT_FEATURES, HIDDEN_FEATURES, onGPU));
     model.addLayer(std::make_unique<ReLU>());
-    model.addLayer(std::make_unique<Dropout>(0.5f));
+    //model.addLayer(std::make_unique<Dropout>(0.5f));
     model.addLayer(std::make_unique<Linear>(HIDDEN_FEATURES, OUTPUT_FEATURES, onGPU));
     model.addLayer(std::make_unique<Softmax>(true));
 
     // Load training data
-    std::string train_images_path = "/home/florian/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";
-    std::string train_labels_path = "/home/florian/CudaNeuralNetwork/MNIST/train-labels-idx1-ubyte/train-labels-idx1-ubyte";
+    std::string train_images_path = "/home/alex/CudaNeuralNetwork/MNIST/train-images-idx3-ubyte/train-images-idx3-ubyte";
+    std::string train_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/train-labels-idx1-ubyte/train-labels-idx1-ubyte";
 
     auto [train_images, train_labels] = MNISTLoader::loadMNIST(train_images_path, train_labels_path, true, TRAIN_SAMPLES);
 
@@ -181,11 +181,10 @@ int main(int argc, char* argv[]) {
                   << ", Loss: " << avg_loss
                   << ", Training Accuracy: " << avg_accuracy << "%" << std::endl;
     }
-    freeCurandStates();
 
     // Evaluation on test set
-    std::string test_images_path = "/home/florian/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
-    std::string test_labels_path = "/home/florian/CudaNeuralNetwork/MNIST/t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte";
+    std::string test_images_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-images-idx3-ubyte/t10k-images-idx3-ubyte";
+    std::string test_labels_path = "/home/alex/CudaNeuralNetwork/MNIST/t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte";
 
     auto [test_images, test_labels] = MNISTLoader::loadMNIST(test_images_path, test_labels_path, true, TEST_SAMPLES);
 
