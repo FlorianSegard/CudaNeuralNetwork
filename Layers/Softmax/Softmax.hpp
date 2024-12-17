@@ -13,11 +13,11 @@ Tensor<float> softmaxCPU(Tensor<float>& input);
 Tensor<float> softmaxBackwardCPU(Tensor<float>& output, Tensor<float>& dOutput);
 
 struct Softmax : public Layer {
-    bool used_with_cross_entropy = false;
+    bool used_with_cat_cross_entropy = false;
 
     Softmax(bool used_with_cross_entropy, int inputSize = 0, int outputSize = 0, bool device = false, bool require_grad = true)
         : Layer(inputSize, outputSize, device, require_grad) {
-        this->used_with_cross_entropy = used_with_cross_entropy;
+        this->used_with_cat_cross_entropy = used_with_cross_entropy;
     }
 
     // Forward pass for Softmax
@@ -35,7 +35,7 @@ struct Softmax : public Layer {
         if (!require_grad) return Tensor<float>();
         Logger::backprop(">>> Softmax");
 
-        if (used_with_cross_entropy) {
+        if (used_with_cat_cross_entropy) {
             return dOutput.clone();
         }
 

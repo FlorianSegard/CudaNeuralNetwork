@@ -15,8 +15,12 @@ __global__ void sigmoidBackwardKernel(float* output, float* dOutput, float* dInp
                                      size_t outStride, size_t dOutStride, size_t dInStride);
 
 struct Sigmoid : public Layer {
-    Sigmoid(int inputSize = 0, int outputSize = 0, bool device = false, bool require_grad = true)
-        : Layer(inputSize, outputSize, device, require_grad) {}
+    bool used_with_bin_cross_entropy = false;
+
+    Sigmoid(bool used_with_bin_cross_entropy, int inputSize = 0, int outputSize = 0, bool device = false, bool require_grad = true)
+        : Layer(inputSize, outputSize, device, require_grad) {
+        this->used_with_bin_cross_entropy = used_with_bin_cross_entropy;
+    }
 
     Tensor<float> computeForward(Tensor<float>& input) override {
         Logger::infer(">>> Sigmoid");
@@ -30,6 +34,10 @@ struct Sigmoid : public Layer {
     Tensor<float> backward(Tensor<float>& dOutput) override {
         if (!require_grad) return Tensor<float>();
         Logger::backprop(">>> Sigmoid");
+        if (used_with_bin_cross_entropy) {
+            // the received gradient from bce is already correct (a - y)
+            return dOutput.clone();
+        }
 
         if (dOutput.device) {
             return sigmoidBackwardGPU(this->lastInput, dOutput);

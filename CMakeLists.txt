@@ -33,9 +33,6 @@ add_executable(first_test_model
     Optimizer/Optimizer.hpp
     Layers/Layers.hpp
     Layers/Linear/Linear.hpp
-    Loss/Loss.cpp
-    Loss/Loss.cu
-    Loss/Loss.hpp
     Loader/ModelLoader.hpp
     Layers/ReLU/ReLU.cpp
     Layers/ReLU/ReLU.cu
@@ -43,6 +40,18 @@ add_executable(first_test_model
     Layers/Softmax/Softmax.cpp
     Layers/Softmax/Softmax.cu
     Layers/Softmax/Softmax.hpp
+    Layers/Sigmoid/Sigmoid.cpp
+    Layers/Sigmoid/Sigmoid.cu
+    Layers/Sigmoid/Sigmoid.hpp
+    Loss/BinaryCrossEntropy/BinCrossEntropy.cpp
+    Loss/BinaryCrossEntropy/BinCrossEntropy.cu
+    Loss/BinaryCrossEntropy/BinCrossEntropy.hpp
+    Loss/CategoricalCrossEntropy/CatCrossEntropy.cpp
+    Loss/CategoricalCrossEntropy/CatCrossEntropy.cu
+    Loss/CategoricalCrossEntropy/CatCrossEntropy.hpp
+    Loss/MeanSquaredError/Mse.cpp
+    Loss/MeanSquaredError/Mse.cu
+    Loss/MeanSquaredError/Mse.hpp
     Logger/Logger.cpp
     Logger/Logger.hpp
     main2.cpp

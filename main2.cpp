@@ -4,7 +4,7 @@
 #include "Layers/ReLU/ReLU.hpp"
 #include "Layers/Softmax/Softmax.hpp"
 #include "Tensor/Tensor.hpp"
-#include "Loss/Loss.hpp"
+#include "Loss/CategoricalCrossEntropy/CatCrossEntropy.hpp"
 #include "Loader/ModelLoader.hpp"
 #include "Logger/Logger.hpp"
 #include "MNIST/MNISTLoader.hpp"
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
             Tensor<float> predictions = model.forward(std::move(inputGPU));
 
             // Compute loss and gradient
-            auto [loss, dOutput] = computeCrossEntropyLoss(predictions, targetGPU);
+            auto [loss, dOutput] = CategoricalCrossEntropyLoss(predictions, targetGPU);
             total_loss += loss;
 
             // Compute accuracy
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
 
         Tensor<float> predictions = model.forward(std::move(inputGPU));
 
-        auto [loss, _] = computeMSELoss(predictions, targetGPU);
+        auto [loss, _] = CategoricalCrossEntropyLoss(predictions, targetGPU);
         test_loss += loss;
 
         Tensor<float> predCPU = predictions.switchDevice(false);
