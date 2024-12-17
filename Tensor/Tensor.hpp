@@ -290,7 +290,7 @@ Tensor<T> Tensor<T>::clone() const {
 template <class T>
 Tensor<T> Tensor<T>::switchDevice(bool gpu) {
     if (gpu == this->device) {
-        return this->clone();
+        return Tensor<T>(std::move(*this));
     }
 
     Tensor<T> result(this->width, this->height, gpu);
