@@ -39,7 +39,7 @@ The framework is built around an efficient tensor implementation supporting:
 | **Scheduler** | • ReduceLROnPlateau<br>• Configurable patience & factor |
 | **Loss Functions** | • MSE<br>• Binary Cross-Entropy<br>• Categorical Cross-Entropy |
 
-### Data handling (in ./Examples)
+### Data handling
 - MNIST dataset loader with normalization options
 - Tabular data loader for CSV files
 - ONNX model import functionality (weights / biases / activation functions)
@@ -65,7 +65,7 @@ model.backward(gradients);
 model.step();
 ```
 
-## Implemented applications
+## Implemented applications (in ./Examples)
 
 | Application | Description                                                     |
 |-------------|-----------------------------------------------------------------|
