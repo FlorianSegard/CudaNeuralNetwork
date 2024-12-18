@@ -5,7 +5,7 @@
 #include "Loss/BinaryCrossEntropy/BinCrossEntropy.hpp"
 #include "Loader/TabularLoader.hpp"
 
-// Configuration
+// Config
 const bool USE_GPU = true;
 const int BATCH_SIZE = 1;
 const int EPOCHS = 15;

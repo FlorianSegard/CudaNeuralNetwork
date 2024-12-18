@@ -1,11 +1,17 @@
 #include "CatCrossEntropy.hpp"
 
 __global__ void crossEntropyLossKernel(const float* predictions, const float* targets,
-                                       float* gradients, float* totalLoss,
-                                       int width, int height,
-                                       size_t predStride, size_t targetStride, size_t gradStride) {
+                                      float* gradients, float* total_loss,
+                                      int width, int height,
+                                      size_t predStride, size_t targetStride, size_t gradStride) {
+    extern __shared__ float shared_loss[];
+
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int tid = threadIdx.y * blockDim.x + threadIdx.x;
+
+    float thread_loss = 0.0f;
+    const float epsilon = 1e-7f;
 
     if (x < width && y < height) {
         int predIdx = x + (predStride / sizeof(float)) * y;
@@ -15,40 +21,52 @@ __global__ void crossEntropyLossKernel(const float* predictions, const float* ta
         float pred = predictions[predIdx];
         float target = targets[targetIdx];
 
-        // The gradient for softmax + cross-entropy is simply pred - target
+        // The gradient for softmax + cross-entropy
         gradients[gradIdx] = pred - target;
 
-        // Compute loss: -target * log(pred)
-        // Add small epsilon to avoid log(0)
-        const float epsilon = 1e-7f;
-        float loss = 0.0f;
+        // loss only for positive targets
         if (target > 0) {
-            loss = -target * logf(pred + epsilon);
+            thread_loss = -target * logf(pred + epsilon);
         }
+    }
 
-        atomicAdd(totalLoss, loss);
+    shared_loss[tid] = thread_loss;
+    __syncthreads();
+
+    // reduction in shared memory
+    for (int s = blockDim.x * blockDim.y / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            shared_loss[tid] += shared_loss[tid + s];
+        }
+        __syncthreads();
+    }
+
+    // First thread in block -> writes result to global memory
+    if (tid == 0) {
+        atomicAdd(total_loss, shared_loss[0]);
     }
 }
 
 float computeCatCrossEntropyLossGPU(const Tensor<float>& predictions, const Tensor<float>& targets, Tensor<float>& gradients) {
-    float* d_loss;
-    cudaMalloc(&d_loss, sizeof(float));
-    cudaMemset(d_loss, 0, sizeof(float));
+    float* d_total_loss;
+    cudaMalloc(&d_total_loss, sizeof(float));
+    cudaMemset(d_total_loss, 0, sizeof(float));
 
-    dim3 blockSize(32, 32);
+    dim3 blockSize(16, 16);  // Reduced block size to allow more shared memory per block
     dim3 numBlocks((predictions.width + blockSize.x - 1) / blockSize.x,
                    (predictions.height + blockSize.y - 1) / blockSize.y);
 
-    crossEntropyLossKernel<<<numBlocks, blockSize>>>(
-        predictions.buffer, targets.buffer, gradients.buffer, d_loss,
+    size_t sharedMemSize = blockSize.x * blockSize.y * sizeof(float);
+
+    crossEntropyLossKernel<<<numBlocks, blockSize, sharedMemSize>>>(
+        predictions.buffer, targets.buffer, gradients.buffer, d_total_loss,
         predictions.width, predictions.height,
         predictions.stride, targets.stride, gradients.stride
     );
 
-    float h_loss;
-    cudaMemcpy(&h_loss, d_loss, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaFree(d_loss);
-    cudaDeviceSynchronize();
+    float total_loss;
+    cudaMemcpy(&total_loss, d_total_loss, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaFree(d_total_loss);
 
-    return h_loss / (float) predictions.height;
+    return total_loss / static_cast<float>(predictions.height);
 }
