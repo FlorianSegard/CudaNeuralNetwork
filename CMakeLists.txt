@@ -60,7 +60,7 @@ add_executable(first_test_model
     Logger/Logger.cpp
     Logger/Logger.hpp
     Scheduler/Scheduler.hpp
-    main2.cpp
+    Examples/MNIST.cpp
 )
 
 target_include_directories(first_test_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

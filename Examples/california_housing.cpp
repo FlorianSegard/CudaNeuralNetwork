@@ -10,7 +10,7 @@
 #include "Logger/Logger.hpp"
 
 // Config
-const bool USE_GPU = true;
+bool USE_GPU = false;
 const int BATCH_SIZE = 3;
 const int INPUT_FEATURES = 8;
 const int HIDDEN_FEATURES = 64;
@@ -83,6 +83,24 @@ std::vector<std::pair<float, float>> getSamplePredictions(
 }
 
 int main(int argc, char* argv[]) {
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-i" || arg == "--infer") {
+            Logger::setLevel(LogLevel::INFER);
+        } else if (arg == "-b" || arg == "--back") {
+            Logger::setLevel(LogLevel::BACKPROP);
+        } else if (arg == "-l" || arg == "--loss") {
+            Logger::setLevel(LogLevel::LOSS);
+        } else if (arg == "-d" || arg == "--debug") {
+            Logger::setLevel(LogLevel::DEBUG);
+        } else if (arg == "-a" || arg == "--all") {
+            Logger::setLevel(LogLevel::ALL);
+        } else if (arg == "--gpu") {
+            std::cout << "-- Using GPU --" << std::endl;
+            USE_GPU = true;
+        }
+    }
+
     std::string train_path = "/home/alex/CudaNeuralNetwork/onnx_generator/data/California_Housing/train_data.csv";
     std::string test_path = "/home/alex/CudaNeuralNetwork/onnx_generator/data/California_Housing/test_data.csv";
 

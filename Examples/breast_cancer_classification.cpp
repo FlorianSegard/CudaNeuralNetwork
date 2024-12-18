@@ -6,7 +6,6 @@
 #include "Loader/TabularLoader.hpp"
 
 // Config
-const bool USE_GPU = true;
 const int BATCH_SIZE = 1;
 const int EPOCHS = 15;
 const float LEARNING_RATE = 0.01f;
@@ -50,6 +49,25 @@ float computeAccuracy(const Tensor<float>& predictions, const std::vector<float>
 }
 
 int main(int argc, char* argv[]) {
+    bool USE_GPU = false;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-i" || arg == "--infer") {
+            Logger::setLevel(LogLevel::INFER);
+        } else if (arg == "-b" || arg == "--back") {
+            Logger::setLevel(LogLevel::BACKPROP);
+        } else if (arg == "-l" || arg == "--loss") {
+            Logger::setLevel(LogLevel::LOSS);
+        } else if (arg == "-d" || arg == "--debug") {
+            Logger::setLevel(LogLevel::DEBUG);
+        } else if (arg == "-a" || arg == "--all") {
+            Logger::setLevel(LogLevel::ALL);
+        } else if (arg == "--gpu") {
+            std::cout << "-- Using GPU --" << std::endl;
+            USE_GPU = true;
+        }
+    }
+
     std::string train_path = "/home/alex/CudaNeuralNetwork/onnx_generator/data/Breast_Cancer/train_data.csv";
     std::string test_path = "/home/alex/CudaNeuralNetwork/onnx_generator/data/Breast_Cancer/test_data.csv";
 

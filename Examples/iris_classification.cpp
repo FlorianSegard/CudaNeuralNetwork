@@ -9,28 +9,34 @@
 #include "Logger/Logger.hpp"
 #include "Loader/TabularLoader.hpp"
 
-int train_iris() {
+int main(int argc, char* argv[]) {
+    bool onGPU = false;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-i" || arg == "--infer") {
+            Logger::setLevel(LogLevel::INFER);
+        } else if (arg == "-b" || arg == "--back") {
+            Logger::setLevel(LogLevel::BACKPROP);
+        } else if (arg == "-l" || arg == "--loss") {
+            Logger::setLevel(LogLevel::LOSS);
+        } else if (arg == "-d" || arg == "--debug") {
+            Logger::setLevel(LogLevel::DEBUG);
+        } else if (arg == "-a" || arg == "--all") {
+            Logger::setLevel(LogLevel::ALL);
+        } else if (arg == "--gpu") {
+            std::cout << "-- Using GPU --" << std::endl;
+            onGPU = true;
+        }
+    }
     std::cout << "\n=== Training Iris Classification Model ===\n" << std::endl;
 
-    // training data
-    auto [train_features, train_labels] = TabularLoader::loadCSV(
-        "/home/alex/CudaNeuralNetwork/onnx_generator/data/Iris/train_data.csv",  // Path to your training data
-        ',',              // delimiter
-        false,            // don't normalize (data is already normalized)
-        -1,               // load all rows
-        true              // skip header
-    );
+    std::string train_path = "/home/alex/CudaNeuralNetwork/onnx_generator/data/Iris/train_data.csv";
+    std::string test_path = "/home/alex/CudaNeuralNetwork/onnx_generator/data/Iris/test_data.csv";
 
-    // test data
-    auto [test_features, test_labels] = TabularLoader::loadCSV(
-        "/home/alex/CudaNeuralNetwork/onnx_generator/data/Iris/test_data.csv",   // Path to your test data
-        ',',
-        false,
-        -1,
-        true
-    );
 
-    bool onGPU = true;
+    auto [train_features, train_labels] = TabularLoader::loadCSV(train_path, ',', false);
+    auto [test_features, test_labels] = TabularLoader::loadCSV(test_path, ',', false);
+
     Model model;
 
     // Learning rate 0.01, momentum 0.9
@@ -124,11 +130,4 @@ int train_iris() {
     }
 
     return 0;
-}
-
-
-int main() {
-    Logger::setLevel(LogLevel::DEBUG);
-
-    return train_iris();
 }
