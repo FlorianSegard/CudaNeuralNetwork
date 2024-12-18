@@ -43,7 +43,7 @@ int train_iris() {
     model.addLayer(std::make_unique<Linear>(8, 3, onGPU));
     model.addLayer(std::make_unique<Softmax>(true));
 
-    const int EPOCHS = 100;
+    const int EPOCHS = 500;
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
         float total_loss = 0.0f;
         float correct = 0.0f;
@@ -117,9 +117,9 @@ int train_iris() {
 
             float test_accuracy = (test_correct / test_features.size()) * 100.0f;
             std::cout << "Epoch " << epoch + 1 << "/" << EPOCHS
-                      << ", Train Loss: " << total_loss
-                      << ", Test Loss: " << test_loss_val
-                      << ", Test Accuracy: " << test_accuracy << "%" << std::endl;
+                      << ", train_loss: " << total_loss
+                      << ", test_loss: " << test_loss_val
+                      << ", test_accuracy: " << test_accuracy << "%" << std::endl;
         }
     }
 
