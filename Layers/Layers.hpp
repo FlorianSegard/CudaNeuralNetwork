@@ -3,6 +3,8 @@
 #include <iostream>
 #include <typeinfo>
 
+#include "Logger/Logger.hpp"
+
 struct LayerParams {
     Tensor<float> weights;
     Tensor<float> biases;
@@ -70,9 +72,9 @@ protected:
     virtual void onDeviceChanged(bool device) {
         const char* layerType = typeid(*this).name(); // Get derived class name
         if (device) {
-            std::cout << "Switching " << layerType << " layer to GPU..." << std::endl;
+            Logger::debug("Switching layer to GPU...");
         } else {
-            std::cout << "Switching " << layerType << " layer to CPU..." << std::endl;
+            Logger::debug("Switching layer to CPU...");
         }
     }
 };

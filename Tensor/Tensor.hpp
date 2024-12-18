@@ -161,6 +161,7 @@ struct Tensor : TensorView<T> {
 
     Tensor clone() const;
     Tensor switchDevice(bool gpu);
+    void switchDeviceInPlace(bool gpu);
     Tensor transpose() const;
     Tensor dot(const Tensor& other);
     Tensor termToTermMult(const Tensor& other);
@@ -197,6 +198,7 @@ Tensor<T>::~Tensor() {
         this->deleter(this->buffer);
     }
     this->buffer = nullptr;
+    this->deleter = nullptr;
 }
 
 template <class T>
@@ -206,7 +208,28 @@ Tensor<T>::Tensor(Tensor&& other) noexcept {
 
 template <class T>
 Tensor<T>& Tensor<T>::operator=(Tensor&& other) noexcept {
-    std::swap((TensorView<T>&)(*this), (TensorView<T>&)(other));
+    if (this != &other) {
+        T* old_buffer = this->buffer;
+        void (*old_deleter)(void*) = this->deleter;
+
+        this->buffer = other.buffer;
+        this->width = other.width;
+        this->height = other.height;
+        this->stride = other.stride;
+        this->device = other.device;
+        this->deleter = other.deleter;
+
+        other.buffer = nullptr;
+        other.deleter = nullptr;
+        other.width = 0;
+        other.height = 0;
+        other.stride = 0;
+        other.device = false;
+
+        if (old_buffer && old_deleter) {
+            old_deleter(old_buffer);
+        }
+    }
     return *this;
 }
 
@@ -304,6 +327,68 @@ Tensor<T> Tensor<T>::switchDevice(bool gpu) {
     }
 
     return result;
+}
+
+template <class T>
+void Tensor<T>::switchDeviceInPlace(bool device) {
+    if (this->device == device) {
+        return;  // Already on the correct device
+    }
+
+    // Allocate new buffer on target device
+    T* new_buffer = nullptr;
+    size_t new_stride;
+
+    if (device) {
+        // CPU to GPU
+        size_t pitch;
+        cudaError_t err = cudaMallocPitch((void**)&new_buffer, &pitch, this->width * sizeof(T), this->height);
+        if (err != cudaSuccess) {
+            throw std::runtime_error(cudaGetErrorString(err));
+        }
+        new_stride = pitch;
+
+        // Copy data to GPU
+        err = cudaMemcpy2D(new_buffer, pitch,
+                          this->buffer, this->stride,
+                          this->width * sizeof(T), this->height,
+                          cudaMemcpyHostToDevice);
+        if (err != cudaSuccess) {
+            cudaFree(new_buffer);
+            throw std::runtime_error(cudaGetErrorString(err));
+        }
+    } else {
+        // GPU to CPU
+        new_stride = this->width * sizeof(T);
+        new_buffer = (T*)malloc(this->height * new_stride);
+        if (!new_buffer) {
+            throw std::runtime_error("Failed to allocate CPU memory");
+        }
+
+        // Copy data to CPU
+        cudaError_t err = cudaMemcpy2D(new_buffer, new_stride,
+                                      this->buffer, this->stride,
+                                      this->width * sizeof(T), this->height,
+                                      cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            free(new_buffer);
+            throw std::runtime_error(cudaGetErrorString(err));
+        }
+    }
+
+    // Free old buffer
+    if (this->buffer) {
+        if (this->device) {
+            cudaFree(this->buffer);
+        } else {
+            free(this->buffer);
+        }
+    }
+
+    // Update tensor properties
+    this->buffer = new_buffer;
+    this->stride = new_stride;
+    this->device = device;
 }
 
 // if transpose in place be careful to change the stride

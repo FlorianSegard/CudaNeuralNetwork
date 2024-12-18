@@ -1,123 +1,129 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
+import torchvision
+import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Subset
+import numpy as np
 
-# Constants
-BATCH_SIZE = 1
-INPUT_FEATURES = 784  # 28x28 pixels
-HIDDEN_FEATURES_1 = 20  # First hidden layer
-OUTPUT_FEATURES = 10  # 10 digits
-TRAIN_SAMPLES = 1000
-TEST_SAMPLES = 10
-EPOCHS = 10
-LEARNING_RATE = 0.001
-GRAD_CLIP_VALUE = 1.0
-
-# Define the Neural Network class
 class MNISTModel(nn.Module):
     def __init__(self):
         super(MNISTModel, self).__init__()
-        self.fc1 = nn.Linear(INPUT_FEATURES, OUTPUT_FEATURES, bias=None)
-        #self.fc2 = nn.Linear(HIDDEN_FEATURES_1, OUTPUT_FEATURES, bias=None)
+
+        self.linear1 = nn.Linear(784, 180)  # 784 = 28*28
+        self.relu1 = nn.ReLU()
+        self.dropout = nn.Dropout(0.2)
+        self.linear2 = nn.Linear(180, 10)
         self.softmax = nn.Softmax(dim=1)
 
-        # Xavier initialization
-        nn.init.xavier_uniform_(self.fc1.weight)
-        #nn.init.xavier_uniform_(self.fc2.weight)
+        # Initialize weights
+        nn.init.xavier_uniform_(self.linear1.weight)
+        nn.init.zeros_(self.linear1.bias)
+        nn.init.xavier_uniform_(self.linear2.weight)
+        nn.init.zeros_(self.linear2.bias)
 
     def forward(self, x):
-        x = self.fc1(x)
-        #x = self.fc2(x)
+        x = self.linear1(x)
+        x = self.relu1(x)
+        x = self.dropout(x)
+        x = self.linear2(x)
         x = self.softmax(x)
         return x
 
-# Custom Optimizer
-class CustomOptimizer:
-    def __init__(self, parameters, learning_rate):
-        self.parameters = list(parameters)
-        self.learning_rate = learning_rate
+def train():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
 
-    def step(self):
-        with torch.no_grad():
-            for param in self.parameters:
-                if param.grad is not None:
-                    # Clip gradients
-                    param.grad.clamp_(-GRAD_CLIP_VALUE, GRAD_CLIP_VALUE)
-                    # Update parameters
-                    param -= self.learning_rate * param.grad
+    # Constants
+    TRAIN_SAMPLES = 10000
+    BATCH_SIZE = 32
+    NUM_EPOCHS = 30
 
-    def zero_grad(self):
-        for param in self.parameters:
-            if param.grad is not None:
-                param.grad.zero_()
+    # Simple transform - just convert to tensor, no normalization
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
 
-# Load the MNIST dataset
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
+    train_dataset = torchvision.datasets.MNIST(
+        root='./data',
+        train=True,
+        transform=transform,
+        download=True
+    )
 
-train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+    # Create subset
+    indices = np.random.choice(len(train_dataset), TRAIN_SAMPLES, replace=False)
+    train_dataset = Subset(train_dataset, indices)
 
-# Subset the dataset to match the TRAIN_SAMPLES and TEST_SAMPLES constants
-train_subset = Subset(train_dataset, range(TRAIN_SAMPLES))
-test_subset = Subset(test_dataset, range(TEST_SAMPLES))
+    train_loader = DataLoader(
+        dataset=train_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=True
+    )
 
-train_loader = DataLoader(train_subset, batch_size=BATCH_SIZE, shuffle=True)
-test_loader = DataLoader(test_subset, batch_size=BATCH_SIZE, shuffle=False)
+    model = MNISTModel().to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.0)
 
-# Initialize the model, loss function, and custom optimizer
-model = MNISTModel()
-criterion = nn.MSELoss()
-optimizer = CustomOptimizer(model.parameters(), LEARNING_RATE)
+    # Export untrained model
+    model.to("cpu")
+    # Create properly shaped input tensor (already flattened)
+    dummy_input = torch.randn(1, 784)  # batch_size=1, flattened_input=784
 
-# Train the model
-for epoch in range(EPOCHS):
-    model.train()
-    train_loss = 0.0
-    correct = 0
-    total = 0
+    torch.onnx.export(
+        model,
+        dummy_input,
+        "mnist_untrained.onnx",
+        export_params=True,
+        opset_version=12,
+        input_names=['input'],
+        output_names=['output'],
+        dynamic_axes={'input': {0: 'batch_size'},
+                     'output': {0: 'batch_size'}}
+    )
 
-    for images, labels in train_loader:
-        # Flatten the images
-        images = images.view(-1, INPUT_FEATURES)
+    # Training loop
+    model.to(device)
+    for epoch in range(NUM_EPOCHS):
+        total_loss = 0
+        correct = 0
+        total = 0
 
-        # Convert labels to one-hot encoding
-        labels_one_hot = torch.zeros((labels.size(0), OUTPUT_FEATURES))
-        labels_one_hot.scatter_(1, labels.view(-1, 1), 1.0)
+        for i, (images, labels) in enumerate(train_loader):
+            # Flatten the images before passing to model
+            images = images.view(-1, 784).to(device)
+            labels = labels.to(device)
 
-        # Forward pass
-        outputs = model(images)
-        loss = criterion(outputs, labels_one_hot)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
 
-        # Backward pass
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-        train_loss += loss.item()
+            total_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-        # Compute training accuracy
-        _, predicted = torch.max(outputs, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+        avg_loss = total_loss / len(train_loader)
+        accuracy = 100 * correct / total
+        print(f'Epoch [{epoch+1}/{NUM_EPOCHS}], Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}%')
 
-    train_accuracy = 100 * correct / total
-    print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {train_loss/len(train_loader):.4f}, Accuracy: {train_accuracy:.2f}%")
+    # Export trained model
+    model.to("cpu")
+    torch.onnx.export(
+        model,
+        dummy_input,
+        "mnist_trained.onnx",
+        export_params=True,
+        opset_version=12,
+        input_names=['input'],
+        output_names=['output'],
+        dynamic_axes={'input': {0: 'batch_size'},
+                     'output': {0: 'batch_size'}}
+    )
+    print("Exported trained model")
 
-# Evaluate the model
-model.eval()
-correct = 0
-total = 0
-with torch.no_grad():
-    for images, labels in test_loader:
-        images = images.view(-1, INPUT_FEATURES)
-        outputs = model(images)
-        _, predicted = torch.max(outputs, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-print(f"Test Accuracy: {100 * correct / total:.2f}%")
+if __name__ == '__main__':
+    train()
